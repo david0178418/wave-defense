@@ -1,5 +1,5 @@
 import { expect, describe, test } from 'bun:test';
-import { World } from './ects';
+import { World } from './simple-ecs';
 
 // Define type for test components
 interface TestComponents {

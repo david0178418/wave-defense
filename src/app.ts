@@ -1,4 +1,4 @@
-import { World } from "./ects";
+import { World } from "./simple-ecs";
 
 interface Components {
 	health: { current: number; max: number };
