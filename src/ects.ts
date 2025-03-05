@@ -9,7 +9,7 @@ interface EventHandler<T> {
 	once: boolean;
 }
 
-class EventBus<EventTypes> {
+export class EventBus<EventTypes> {
 	private handlers: Map<keyof EventTypes, Array<EventHandler<any>>> = new Map();
 
 	/**
@@ -239,7 +239,7 @@ class EntityManager<ComponentTypes> {
 	}
 }
 
-interface System<
+export interface System<
 	ComponentTypes,
 	WithComponents extends keyof ComponentTypes = never,
 	WithoutComponents extends keyof ComponentTypes = never,
@@ -248,7 +248,7 @@ interface System<
 	label: string;
 	with?: ReadonlyArray<WithComponents>;
 	without?: ReadonlyArray<WithoutComponents>;
-	process(
+	process?(
 		entities: FilteredEntity<ComponentTypes, WithComponents, WithoutComponents>[], 
 		deltaTime: number, 
 		entityManager: EntityManager<ComponentTypes>,
@@ -258,6 +258,17 @@ interface System<
 	// Optional lifecycle hooks for event handling
 	onAttach?: (eventBus: EventBus<EventTypes>) => void;
 	onDetach?: (eventBus: EventBus<EventTypes>) => void;
+	
+	// Structured container for event handlers
+	eventHandlers?: {
+		[EventName in keyof EventTypes]?: {
+			handler: (
+				data: EventTypes[EventName], 
+				eventBus: EventBus<EventTypes>, 
+				entityManager: EntityManager<ComponentTypes>
+			) => void;
+		};
+	};
 }
 
 export
@@ -282,6 +293,24 @@ class World<ComponentTypes, EventTypes = any> {
 			system.onAttach(this.eventBus);
 		}
 		
+		// Auto-subscribe to events if eventHandlers are defined
+		if (system.eventHandlers) {
+			for (const eventName in system.eventHandlers) {
+				const handler = system.eventHandlers[eventName];
+				if (handler?.handler) {
+					// Create a wrapper that passes the additional parameters to the handler
+					const wrappedHandler = (data: any) => {
+						handler.handler(data, this.eventBus, this.entityManager);
+					};
+					
+					this.eventBus.subscribe(
+						eventName, 
+						wrappedHandler
+					);
+				}
+			}
+		}
+		
 		return this;
 	}
 	
@@ -290,10 +319,10 @@ class World<ComponentTypes, EventTypes = any> {
 		if (index !== -1) {
 			const system = this.systems[index];
 			
-			// Call onDetach if defined
-			if (system && system.onDetach) {
-				system.onDetach(this.eventBus);
-			}
+			system?.onDetach?.(this.eventBus);
+			
+			// We no longer need to manually unsubscribe events since
+			// we don't store unsubscribe functions anymore
 			
 			this.systems.splice(index, 1);
 			return true;
@@ -309,7 +338,7 @@ class World<ComponentTypes, EventTypes = any> {
 				requiredComponents as any,
 				excludedComponents as any
 			);
-			system.process(entities, deltaTime, this.entityManager, this.eventBus);
+			system.process?.(entities, deltaTime, this.entityManager, this.eventBus);
 		}
 	}
 	
