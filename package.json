@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun run src/index.ts",
+    "dev": "bun run ./index.html",
     "tsc": "bunx tsc"
   },
   "devDependencies": {
@@ -12,5 +12,8 @@
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "pixi.js": "^8.8.1"
   }
 }
