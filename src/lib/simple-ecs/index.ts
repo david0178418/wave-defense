@@ -9,6 +9,32 @@ interface EventHandler<T> {
 	once: boolean;
 }
 
+export class ResourceManager<ResourceTypes> {
+	private resources: Map<keyof ResourceTypes, any> = new Map();
+
+	add<K extends keyof ResourceTypes>(label: K, resource: ResourceTypes[K]): ResourceTypes[K] {
+		this.resources.set(label, resource);
+		return resource;
+	}
+
+	get<K extends keyof ResourceTypes>(label: K): ResourceTypes[K] {
+		const resource = this.resources.get(label);
+		if (!resource) {
+			console.error(label);
+			throw new Error(`Resource ${label.toString()} not found`);
+		}
+		return resource;
+	}
+
+	has(label: keyof ResourceTypes): boolean {
+		return this.resources.has(label);
+	}
+
+	remove(label: keyof ResourceTypes): boolean {
+		return this.resources.delete(label);
+	}
+}
+
 export class EventBus<EventTypes> {
 	private handlers: Map<keyof EventTypes, Array<EventHandler<any>>> = new Map();
 
@@ -72,9 +98,6 @@ export class EventBus<EventTypes> {
 		};
 	}
 
-	/**
-	 * Publish an event
-	 */
 	publish<E extends keyof EventTypes>(
 		eventType: E,
 		data: EventTypes[E]
@@ -95,7 +118,6 @@ export class EventBus<EventTypes> {
 			}
 		}
 		
-		// Remove one-time handlers
 		if (handlersToRemove.length > 0) {
 			for (const handler of handlersToRemove) {
 				const index = handlers.indexOf(handler);
@@ -106,16 +128,10 @@ export class EventBus<EventTypes> {
 		}
 	}
 
-	/**
-	 * Clear all event subscriptions
-	 */
 	clear(): void {
 		this.handlers.clear();
 	}
 
-	/**
-	 * Clear subscriptions for a specific event
-	 */
 	clearEvent<E extends keyof EventTypes>(eventType: E): void {
 		this.handlers.delete(eventType);
 	}
@@ -133,7 +149,7 @@ interface FilteredEntity<
 }
 
 class EntityManager<ComponentTypes> {
-	private nextId: number = 0;
+	private nextId: number = 1;
 	private entities: Map<number, Entity<ComponentTypes>> = new Map();
 	private componentIndices: Map<keyof ComponentTypes, Set<number>> = new Map();
 	
@@ -243,7 +259,8 @@ export interface System<
 	ComponentTypes,
 	WithComponents extends keyof ComponentTypes = never,
 	WithoutComponents extends keyof ComponentTypes = never,
-	EventTypes = any
+	EventTypes = any,
+	ResourceTypes = any,
 > {
 	label: string;
 	with?: ReadonlyArray<WithComponents>;
@@ -252,45 +269,61 @@ export interface System<
 		entities: FilteredEntity<ComponentTypes, WithComponents, WithoutComponents>[], 
 		deltaTime: number, 
 		entityManager: EntityManager<ComponentTypes>,
-		eventBus: EventBus<EventTypes>
+		resourceManager: ResourceManager<ResourceTypes>,
+		eventBus: EventBus<EventTypes>,
 	): void;
 	
 	// Optional lifecycle hooks for event handling
-	onAttach?: (eventBus: EventBus<EventTypes>) => void;
-	onDetach?: (eventBus: EventBus<EventTypes>) => void;
+	onAttach?(
+		entityManager: EntityManager<ComponentTypes>,
+		resourceManager: ResourceManager<ResourceTypes>,
+		eventBus: EventBus<EventTypes>,
+	): void;
+	onDetach?(
+		entityManager: EntityManager<ComponentTypes>,
+		resourceManager: ResourceManager<ResourceTypes>,
+		eventBus: EventBus<EventTypes>,
+	): void;
 	
 	// Structured container for event handlers
 	eventHandlers?: {
 		[EventName in keyof EventTypes]?: {
-			handler: (
-				data: EventTypes[EventName], 
-				eventBus: EventBus<EventTypes>, 
-				entityManager: EntityManager<ComponentTypes>
-			) => void;
+			handler(
+				data: EventTypes[EventName],
+				entityManager: EntityManager<ComponentTypes>,
+				resourceManager: ResourceManager<ResourceTypes>,
+				eventBus: EventBus<EventTypes>,
+			): void;
 		};
 	};
 }
 
 export
-class World<ComponentTypes, EventTypes = any> {
-	private entityManager: EntityManager<ComponentTypes>;
-	private systems: System<ComponentTypes, any, any, EventTypes>[] = [];
-	private eventBus: EventBus<EventTypes>;
+class World<ComponentTypes, EventTypes = any, ResourceTypes extends Record<string, any> = {}> {
+	private _entityManager: EntityManager<ComponentTypes>;
+	private _systems: System<ComponentTypes, any, any, EventTypes, ResourceTypes>[] = [];
+	private _eventBus: EventBus<EventTypes>;
+	private _resourceManager: ResourceManager<ResourceTypes>;
 
 	constructor() {
-		this.entityManager = new EntityManager<ComponentTypes>();
-		this.eventBus = new EventBus<EventTypes>();
+		this._entityManager = new EntityManager<ComponentTypes>();
+		this._eventBus = new EventBus<EventTypes>();
+		this._resourceManager = new ResourceManager<ResourceTypes>();
 	}
 
 	addSystem<
 		WithComponents extends keyof ComponentTypes = never,
 		WithoutComponents extends keyof ComponentTypes = never
-	>(system: System<ComponentTypes, WithComponents, WithoutComponents, EventTypes>) {
-		this.systems.push(system);
+	>(system: System<ComponentTypes, WithComponents, WithoutComponents, EventTypes, ResourceTypes>) {
+		this._systems.push(system);
 		
 		// Call onAttach if defined
 		if (system.onAttach) {
-			system.onAttach(this.eventBus);
+			system.onAttach(
+				this._entityManager,
+				this._resourceManager,
+				this._eventBus,
+			);
 		}
 		
 		// Auto-subscribe to events if eventHandlers are defined
@@ -300,10 +333,15 @@ class World<ComponentTypes, EventTypes = any> {
 				if (handler?.handler) {
 					// Create a wrapper that passes the additional parameters to the handler
 					const wrappedHandler = (data: any) => {
-						handler.handler(data, this.eventBus, this.entityManager);
+						handler.handler(
+							data,
+							this._entityManager,
+							this._resourceManager,
+							this._eventBus,
+						);
 					};
 					
-					this.eventBus.subscribe(
+					this._eventBus.subscribe(
 						eventName, 
 						wrappedHandler
 					);
@@ -315,46 +353,57 @@ class World<ComponentTypes, EventTypes = any> {
 	}
 	
 	removeSystem(systemLabel: string) {
-		const index = this.systems.findIndex(sys => sys.label === systemLabel);
+		const index = this._systems.findIndex(sys => sys.label === systemLabel);
 		if (index !== -1) {
-			const system = this.systems[index];
+			const system = this._systems[index];
 			
-			system?.onDetach?.(this.eventBus);
+			system?.onDetach?.(
+				this._entityManager,
+				this._resourceManager,
+				this._eventBus,
+			);
 			
 			// We no longer need to manually unsubscribe events since
 			// we don't store unsubscribe functions anymore
 			
-			this.systems.splice(index, 1);
+			this._systems.splice(index, 1);
 			return true;
 		}
 		return false;
 	}
 
 	update(deltaTime: number) {
-		for (const system of this.systems) {
+		for (const system of this._systems) {
 			const requiredComponents = system.with || [];
 			const excludedComponents = system.without || [];
-			const entities = this.entityManager.getEntitiesWithComponents(
+			const entities = this._entityManager.getEntitiesWithComponents(
 				requiredComponents,
 				excludedComponents,
 			);
-			system.process?.(entities, deltaTime, this.entityManager, this.eventBus);
+			system.process?.(
+				entities,
+				deltaTime,
+				this._entityManager,
+				this._resourceManager,
+				this._eventBus,
+			);
 		}
 	}
 	
-	/**
-	 * Get the event bus to allow external systems to subscribe/publish events
-	 */
-	getEventBus(): EventBus<EventTypes> {
-		return this.eventBus;
+	get eventBus(): EventBus<EventTypes> {
+		return this._eventBus;
+	}
+
+	get resourceManager(): ResourceManager<ResourceTypes> {
+		return this._resourceManager;
 	}
 
 	createEntity(): number {
-		return this.entityManager.createEntity();
+		return this._entityManager.createEntity();
 	}
 
 	removeEntity(entityId: number): boolean {
-		return this.entityManager.removeEntity(entityId);
+		return this._entityManager.removeEntity(entityId);
 	}
 
 	addComponent<ComponentName extends keyof ComponentTypes>(
@@ -362,7 +411,7 @@ class World<ComponentTypes, EventTypes = any> {
 		componentName: ComponentName,
 		data: ComponentTypes[ComponentName]
 	) {
-		this.entityManager.addComponent(entityId, componentName, data);
+		this._entityManager.addComponent(entityId, componentName, data);
 		return this;
 	}
 
@@ -370,11 +419,28 @@ class World<ComponentTypes, EventTypes = any> {
 		entityId: number, 
 		componentName: ComponentName
 	) {
-		this.entityManager.removeComponent(entityId, componentName);
+		this._entityManager.removeComponent(entityId, componentName);
 		return this;
 	}
 
-	getComponent<ComponentName extends keyof ComponentTypes>(entityId: number, componentName: ComponentName): ReturnType<typeof EntityManager.prototype.getComponent> {
-		return this.entityManager.getComponent(entityId, componentName);
+	getComponent<ComponentName extends keyof ComponentTypes>(entityId: number, componentName: ComponentName): ComponentTypes[ComponentName] | null {
+		return this._entityManager.getComponent(entityId, componentName);
+	}
+
+	addResource<K extends keyof ResourceTypes>(label: K, resource: ResourceTypes[K]) {
+		this._resourceManager.add(label, resource);
+		return this
+	}
+
+	getResource<K extends keyof ResourceTypes>(label: K): ResourceTypes[K] {
+		return this._resourceManager.get(label);
+	}
+
+	hasResource(label: string): boolean {
+		return this._resourceManager.has(label);
+	}
+
+	removeResource(label: string): boolean {
+		return this._resourceManager.remove(label);
 	}
 }
