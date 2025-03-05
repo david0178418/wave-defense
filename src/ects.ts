@@ -335,8 +335,8 @@ class World<ComponentTypes, EventTypes = any> {
 			const requiredComponents = system.with || [];
 			const excludedComponents = system.without || [];
 			const entities = this.entityManager.getEntitiesWithComponents(
-				requiredComponents as any,
-				excludedComponents as any
+				requiredComponents,
+				excludedComponents,
 			);
 			system.process?.(entities, deltaTime, this.entityManager, this.eventBus);
 		}
