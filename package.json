@@ -3,6 +3,10 @@
   "module": "index.html",
   "type": "module",
   "private": true,
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "tsc": "bunx tsc"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
