@@ -160,6 +160,7 @@ class EntityManager<ComponentTypes> {
 		return id;
 	}
 
+	// TODO: Component object pooling if(/when) garbage collection is an issue...?
 	addComponent<ComponentName extends keyof ComponentTypes>(
 		entityId: number,
 		componentName: ComponentName,
