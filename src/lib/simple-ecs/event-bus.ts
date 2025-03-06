@@ -66,7 +66,7 @@ class EventBus<EventTypes> {
 
 	publish<E extends keyof EventTypes>(
 		eventType: E,
-		data: EventTypes[E]
+		data: EventTypes[E] = undefined as EventTypes[E]
 	): void {
 		const handlers = this.handlers.get(eventType);
 		if (!handlers) return;
