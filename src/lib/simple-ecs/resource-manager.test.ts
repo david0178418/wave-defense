@@ -1,5 +1,5 @@
 import { expect, describe, test } from 'bun:test';
-import { SimpleECS } from '.';
+import SimpleECS from './simple-ecs';
 
 interface TestComponents {
 	position: { x: number; y: number };
