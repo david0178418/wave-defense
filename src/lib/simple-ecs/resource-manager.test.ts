@@ -1,5 +1,5 @@
 import { expect, describe, test } from 'bun:test';
-import { World } from '.';
+import { SimpleECS } from '.';
 
 interface TestComponents {
 	position: { x: number; y: number };
@@ -25,7 +25,7 @@ interface TestResources {
 
 describe('Resource System', () => {
 	test('should add and retrieve resources', () => {
-		const world = new World<TestComponents, TestEvents, TestResources>();
+		const world = new SimpleECS<TestComponents, TestEvents, TestResources>();
 		
 		world.addResource('config', { debug: true, timeStep: 1/60 });
 		world.addResource('gameState', { current: 'menu', score: 0 });
@@ -45,7 +45,7 @@ describe('Resource System', () => {
 	});
 	
 	test('should check existence and remove resources', () => {
-		const world = new World<TestComponents, TestEvents, TestResources>();
+		const world = new SimpleECS<TestComponents, TestEvents, TestResources>();
 		
 		world.addResource('config', { debug: true, timeStep: 1/60 });
 		
@@ -62,13 +62,13 @@ describe('Resource System', () => {
 	});
 	
 	test('should throw error when getting uninitialized resource', () => {
-		const world = new World<TestComponents, TestEvents, TestResources>();
+		const world = new SimpleECS<TestComponents, TestEvents, TestResources>();
 		
 		expect(() => world.getResource('config')).toThrow('Resource config not found');
 	});
 	
 	test('should allow accessing ResourceManager directly', () => {
-		const { resourceManager } = new World<TestComponents, TestEvents, TestResources>();
+		const { resourceManager } = new SimpleECS<TestComponents, TestEvents, TestResources>();
 		
 		resourceManager.add('config', { debug: true, timeStep: 1/60 });
 		
@@ -78,7 +78,7 @@ describe('Resource System', () => {
 	});
 	
 	test('should provide resources to systems', () => {
-		const world = new World<TestComponents, TestEvents, TestResources>();
+		const world = new SimpleECS<TestComponents, TestEvents, TestResources>();
 		
 		world.addResource('config', { debug: true, timeStep: 1/60 });
 		world.addResource('gameState', { current: 'game', score: 100 });
@@ -128,7 +128,7 @@ describe('Resource System', () => {
 	});
 	
 	test('should handle resources in system lifecycle hooks', () => {
-		const world = new World<TestComponents, TestEvents, TestResources>();
+		const world = new SimpleECS<TestComponents, TestEvents, TestResources>();
 		
 		world.addResource('config', { debug: true, timeStep: 1/60 });
 		
@@ -156,7 +156,7 @@ describe('Resource System', () => {
 	});
 	
 	test('should provide resources to event handlers', () => {
-		const world = new World<TestComponents, TestEvents, TestResources>();
+		const world = new SimpleECS<TestComponents, TestEvents, TestResources>();
 		const eventBus = world.eventBus;
 		
 		world.addResource('config', { debug: true, timeStep: 1/60 });

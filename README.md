@@ -11,7 +11,7 @@ SimpleECS is a lightweight Entity-Component-System (ECS) architecture designed f
 
 ### Getting Started
 
-#### Creating a World
+#### Creating a SimpleECS
 
 First, define your component types interface:
 
@@ -24,12 +24,12 @@ interface GameComponents {
 }
 ```
 
-Then create a world:
+Then create a game:
 
 ```typescript
-import { World } from "./simple-ecs";
+import SimpleECS from "./simple-ecs";
 
-const world = new World<GameComponents>();
+const game = new SimpleECS<GameComponents>();
 ```
 
 #### Working with Entities
@@ -38,21 +38,21 @@ Create entities and add components to them:
 
 ```typescript
 // Create a new entity
-const entityId = world.createEntity();
+const entityId = game.createEntity();
 
 // Add components
-world.addComponent(entityId, 'position', { x: 10, y: 20 })
+game.addComponent(entityId, 'position', { x: 10, y: 20 })
      .addComponent(entityId, 'health', { current: 100, max: 100 });
 
 // Get component data
-const position = world.getComponent(entityId, 'position');
+const position = game.getComponent(entityId, 'position');
 console.log(position); // { x: 10, y: 20 }
 
 // Remove component
-world.removeComponent(entityId, 'position');
+game.removeComponent(entityId, 'position');
 
 // Remove entity
-world.removeEntity(entityId);
+game.removeEntity(entityId);
 ```
 
 #### Creating Systems
@@ -61,7 +61,7 @@ Systems process entities with specific components:
 
 ```typescript
 // Create a movement system
-world.addSystem({
+game.addSystem({
   label: "MovementSystem",
   with: ['position', 'velocity'],  // Required components
   without: ['frozen'],             // Excluded components
@@ -80,7 +80,7 @@ world.addSystem({
 });
 
 // Update all systems (typically called in game loop)
-world.update(1/60); // 60 FPS
+game.update(1/60); // 60 FPS
 ```
 
 ### Event System
@@ -95,9 +95,9 @@ interface GameEvents {
   // Add more events as needed
 }
 
-// Create world with events
-const world = new World<GameComponents, GameEvents>();
-const eventBus = world.getEventBus();
+// Create game with events
+const game = new SimpleECS<GameComponents, GameEvents>();
+const eventBus = game.getEventBus();
 
 // Subscribe to an event
 eventBus.subscribe('healthChanged', (data) => {
@@ -126,7 +126,7 @@ eventBus.clear();                  // Clear all events
 Systems can have dedicated event handlers:
 
 ```typescript
-world.addSystem({
+game.addSystem({
   label: "DamageSystem",
   eventHandlers: {
     collision: {
@@ -160,20 +160,20 @@ world.addSystem({
 Systems can use lifecycle hooks:
 
 ```typescript
-world.addSystem({
+game.addSystem({
   label: "LifecycleSystem",
   onAttach: (eventBus) => {
-    // Called when system is added to world
+    // Called when system is added to game
     console.log("System attached");
   },
   onDetach: (eventBus) => {
-    // Called when system is removed from world
+    // Called when system is removed from game
     console.log("System detached");
   }
 });
 
 // Remove system
-world.removeSystem("LifecycleSystem");
+game.removeSystem("LifecycleSystem");
 ```
 
 ### Advanced Entity Queries
@@ -182,12 +182,12 @@ Get entities with specific components:
 
 ```typescript
 // Get entities with both position and velocity components
-const movingEntities = world.entityManager.getEntitiesWithComponents(
+const movingEntities = game.entityManager.getEntitiesWithComponents(
   ['position', 'velocity']
 );
 
 // Get entities with position but without health
-const props = world.entityManager.getEntitiesWithComponents(
+const props = game.entityManager.getEntitiesWithComponents(
   ['position'],
   ['health']
 );

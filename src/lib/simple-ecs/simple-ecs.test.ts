@@ -1,5 +1,5 @@
 import { expect, describe, test } from 'bun:test';
-import { World } from '.';
+import SimpleECS from './simple-ecs';
 
 interface TestComponents {
 	position: { x: number; y: number };
@@ -11,9 +11,9 @@ interface TestComponents {
 	state: { current: string; previous: string };
 }
 
-describe('World', () => {
+describe('SimpleECS', () => {
 	test('should create a new entities and increment ids', () => {
-		const world = new World<TestComponents>();
+		const world = new SimpleECS<TestComponents>();
 		const entityId = world.createEntity();
 		
 		expect(entityId).toBe(1);
@@ -23,7 +23,7 @@ describe('World', () => {
 	});
 	
 	test('should add components to entities', () => {
-		const world = new World<TestComponents>();
+		const world = new SimpleECS<TestComponents>();
 		const entityId = world.createEntity();
 		
 		world.addComponent(entityId, 'position', { x: 10, y: 20 });
@@ -33,7 +33,7 @@ describe('World', () => {
 	});
 	
 	test('should remove components from entities', () => {
-		const world = new World<TestComponents>();
+		const world = new SimpleECS<TestComponents>();
 		const entityId = world.createEntity();
 		
 		world.addComponent(entityId, 'position', { x: 10, y: 20 });
@@ -45,7 +45,7 @@ describe('World', () => {
 	});
 	
 	test('should remove entities', () => {
-		const world = new World<TestComponents>();
+		const world = new SimpleECS<TestComponents>();
 		const entityId = world.createEntity();
 		
 		world.addComponent(entityId, 'position', { x: 10, y: 20 });
@@ -58,7 +58,7 @@ describe('World', () => {
 	});
 	
 	test('should process systems with the correct entities', () => {
-		const world = new World<TestComponents>();
+		const world = new SimpleECS<TestComponents>();
 		const entity1 = world.createEntity();
 
 		world.addComponent(entity1, 'position', { x: 0, y: 0 });
@@ -93,7 +93,7 @@ describe('World', () => {
 	});
 	
 	test('should allow systems to modify entities', () => {
-		const world = new World<TestComponents>();
+		const world = new SimpleECS<TestComponents>();
 		
 		const entity1 = world.createEntity();
 		world.addComponent(entity1, 'position', { x: 10, y: 20 });
@@ -123,7 +123,7 @@ describe('World', () => {
 	});
 	
 	test('should throw when accessing components of non-existent entities', () => {
-		const world = new World<TestComponents>();
+		const world = new SimpleECS<TestComponents>();
 		
 		expect(() => world.getComponent(999, 'position')).toThrow();
 		expect(() => world.addComponent(999, 'position', { x: 10, y: 20 })).toThrow();
@@ -131,7 +131,7 @@ describe('World', () => {
 	});
 	
 	test('should return null for non-existent components', () => {
-		const world = new World<TestComponents>();
+		const world = new SimpleECS<TestComponents>();
 		const entityId = world.createEntity();
 		const health = world.getComponent(entityId, 'health');
 
@@ -139,14 +139,14 @@ describe('World', () => {
 	});
 	
 	test('should return false when removing non-existent entity', () => {
-		const world = new World<TestComponents>();
+		const world = new SimpleECS<TestComponents>();
 		const result = world.removeEntity(999);
 		
 		expect(result).toBe(false);
 	});
 	
 	test('should handle state transitions in a multi-system environment', () => {
-		const world = new World<TestComponents>();
+		const world = new SimpleECS<TestComponents>();
 		
 		// Create entity with multiple components for state machine testing
 		const entityId = world.createEntity();
@@ -266,7 +266,7 @@ describe('World', () => {
 	});
 	
 	test('should handle dynamic component addition and removal during system execution', () => {
-		const world = new World<TestComponents>();
+		const world = new SimpleECS<TestComponents>();
 		const entityId = world.createEntity();
 
 		world.addComponent(entityId, 'position', { x: 0, y: 0 });

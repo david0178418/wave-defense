@@ -4,7 +4,7 @@ import ResourceManager from "./resource-manager";
 import type { System } from "./types";
 
 export default
-class World<ComponentTypes, EventTypes = any, ResourceTypes extends Record<string, any> = {}> {
+class SimpleECS<ComponentTypes, EventTypes = any, ResourceTypes extends Record<string, any> = {}> {
 	private _entityManager: EntityManager<ComponentTypes>;
 	private _systems: System<ComponentTypes, any, any, EventTypes, ResourceTypes>[] = [];
 	private _eventBus: EventBus<EventTypes>;
