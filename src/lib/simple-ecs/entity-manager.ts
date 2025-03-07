@@ -30,6 +30,7 @@ class EntityManager<ComponentTypes> {
 			this.componentIndices.set(componentName, new Set());
 		}
 		this.componentIndices.get(componentName)?.add(entityId);
+		return this;
 	}
 
 	removeComponent<ComponentName extends keyof ComponentTypes>(entityId: number, componentName: ComponentName) {
