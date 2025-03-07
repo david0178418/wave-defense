@@ -57,10 +57,59 @@ game.removeEntity(entityId);
 
 #### Creating Systems
 
-Systems process entities with specific components:
+Systems process entities with specific components. There are two ways to create systems:
+
+##### Using SystemBuilder (Recommended)
 
 ```typescript
-// Create a movement system
+import { createSystem } from "./simple-ecs";
+
+// Create a movement system using the builder pattern
+const movementSystem = createSystem<GameComponents>('movement-system')
+  .addEntityQuery('moving', {
+    with: ['position', 'velocity'],  // Required components
+    without: ['frozen']              // Excluded components
+  })
+  .setProcess((queries, deltaTime, entityManager, resourceManager, eventBus) => {
+    // Type-safe access to query results
+    const movingEntities = queries.moving;
+    
+    if (!movingEntities || movingEntities.length === 0) return;
+    
+    for (const entity of movingEntities) {
+      const pos = entity.components.position;
+      const vel = entity.components.velocity;
+      
+      // Update position based on velocity and delta time
+      entityManager.addComponent(entity.id, 'position', {
+        x: pos.x + vel.x * deltaTime,
+        y: pos.y + vel.y * deltaTime
+      });
+    }
+  });
+
+// Add the system to the game
+game.addSystem(movementSystem);
+
+// Or add it directly using method chaining
+game.addSystem(
+  createSystem<GameComponents>('collision-system')
+    .addEntityQuery('collidable', {
+      with: ['position', 'collider']
+    })
+    .setProcess((queries, deltaTime, entityManager) => {
+      // Process collision logic
+    })
+);
+
+// Update all systems (typically called in game loop)
+game.update(1/60); // 60 FPS
+```
+
+##### Legacy System Definition (Deprecated)
+
+```typescript
+// Create a movement system (deprecated approach)
 game.addSystem({
   label: "MovementSystem",
   with: ['position', 'velocity'],  // Required components
@@ -78,9 +127,6 @@ game.addSystem({
     }
   }
 });
-
-// Update all systems (typically called in game loop)
-game.update(1/60); // 60 FPS
 ```
 
 ### Event System
@@ -126,29 +172,43 @@ eventBus.clear();                  // Clear all events
 Systems can have dedicated event handlers:
 
 ```typescript
+// Using SystemBuilder (Recommended)
+game.addSystem(
+  createSystem<GameComponents>('damage-system')
+    .setEventHandlers({
+      collision: {
+        handler: (data, entityManager, resourceManager, eventBus) => {
+          // Handle collision event
+          const entity1Health = entityManager.getComponent(data.entity1Id, 'health');
+          if (entity1Health) {
+            const newHealth = Math.max(0, entity1Health.current - 10);
+            
+            // Update health
+            entityManager.addComponent(data.entity1Id, 'health', {
+              ...entity1Health,
+              current: newHealth
+            });
+            
+            // Publish follow-up event
+            eventBus.publish('healthChanged', {
+              entityId: data.entity1Id,
+              oldValue: entity1Health.current,
+              newValue: newHealth
+            });
+          }
+        }
+      }
+    })
+);
+
+// Legacy approach (deprecated)
 game.addSystem({
   label: "DamageSystem",
   eventHandlers: {
     collision: {
       handler: (data, eventBus, entityManager) => {
         // Handle collision event
-        const entity1Health = entityManager.getComponent(data.entity1Id, 'health');
-        if (entity1Health) {
-          const newHealth = Math.max(0, entity1Health.current - 10);
-          
-          // Update health
-          entityManager.addComponent(data.entity1Id, 'health', {
-            ...entity1Health,
-            current: newHealth
-          });
-          
-          // Publish follow-up event
-          eventBus.publish('healthChanged', {
-            entityId: data.entity1Id,
-            oldValue: entity1Health.current,
-            newValue: newHealth
-          });
-        }
+        // ...
       }
     }
   }
@@ -160,6 +220,20 @@ game.addSystem({
 Systems can use lifecycle hooks:
 
 ```typescript
+// Using SystemBuilder (Recommended)
+game.addSystem(
+  createSystem<GameComponents>('lifecycle-system')
+    .setOnAttach((entityManager, resourceManager, eventBus) => {
+      // Called when system is added to game
+      console.log("System attached");
+    })
+    .setOnDetach((entityManager, resourceManager, eventBus) => {
+      // Called when system is removed from game
+      console.log("System detached");
+    })
+);
+
+// Legacy approach (deprecated)
 game.addSystem({
   label: "LifecycleSystem",
   onAttach: (eventBus) => {
@@ -175,6 +249,16 @@ game.addSystem({
 // Remove system
 game.removeSystem("LifecycleSystem");
 ```
+
+### Benefits of SystemBuilder
+
+The SystemBuilder pattern offers several advantages:
+
+1. **Type Safety**: Full TypeScript support with properly typed queries and components
+2. **Named Queries**: Use descriptive names for entity queries to improve code readability
+3. **Multiple Queries**: Define and access multiple entity queries within a single system
+4. **Fluent API**: Method chaining provides a more readable and self-documenting API
+5. **Consistent Pattern**: All systems follow a uniform pattern, enhancing maintainability
 
 ### Advanced Entity Queries
 
