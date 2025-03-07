@@ -531,7 +531,7 @@ game
 							const mapSize = resourceManager.get('config').mapSize;
 							
 							// Make sure player has all required components
-							if (player && player.components.position && player.components.velocity && player.components.health) {
+							if (player?.components.position && player?.components.velocity && player?.components.health) {
 								// Reset position to center of map
 								player.components.position.x = mapSize / 2;
 								player.components.position.y = mapSize / 2;
