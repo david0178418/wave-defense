@@ -1,4 +1,4 @@
-import { Application, Sprite, Texture, Container, Graphics } from "pixi.js";
+import { Application, Sprite, Texture, Container, Graphics, Text } from "pixi.js";
 import SimpleECS from "./lib/simple-ecs";
 import movementFeature from "./features/movement-feature";
 import playerControlFeature from "./features/player-control-feature";
@@ -116,7 +116,7 @@ game
 				const halfHeight = sprite.height / 2;
 				
 				// Calculate entity boundaries based on its position and sprite dimensions
-				// Taking into account that position is at center due to sprite anchor being 0.5
+				// Taking into account that position is at center due to sprite anchor being 0.5Crea
 				
 				// Check left boundary
 				if (position.x - halfWidth < borderWidth) {
@@ -158,6 +158,201 @@ game
 		},
 	})
 	.addSystem({
+		label: "enemy-spawning",
+		process(entities, deltaTime, entityManager, resourceManager) {
+			// Get the map size to know where enemies can spawn
+			const mapSize = resourceManager.get('config').mapSize;
+			const borderWidth = 10;
+			const worldContainer = resourceManager.get('worldContainer');
+			
+			// Initialize enemy state if needed
+			if (!resourceManager.has('enemyState')) {
+				resourceManager.add('enemyState', {
+					spawnTimer: 0,
+					maxEnemies: 10 // Maximum number of enemies allowed at once
+				});
+			}
+			
+			// Get enemy state from resources
+			const enemyState = resourceManager.get('enemyState');
+			
+			// Increment the timer
+			enemyState.spawnTimer += deltaTime;
+			
+			// Spawn an enemy every 3 seconds if below max
+			if (enemyState.spawnTimer >= 3) {
+				enemyState.spawnTimer = 0;
+				
+				// Count current enemies to enforce the limit
+				const enemies = entityManager.getEntitiesWithComponents(['enemy']);
+				if (enemies.length >= enemyState.maxEnemies) return;
+				
+				// Create a new enemy entity
+				const enemy = entityManager.createEntity();
+				
+				// Create an enemy sprite (red square)
+				const sprite = new Sprite({
+					texture: Texture.WHITE,
+					width: 30,
+					height: 30,
+					tint: 0xFF0000, // Red color
+				});
+				
+				// Set the anchor point to the center of the sprite
+				sprite.anchor.set(0.5, 0.5);
+				worldContainer.addChild(sprite);
+				
+				// Random position along the edges of the map (with some spacing from borders)
+				let x = 0;
+				let y = 0;
+				const safeZone = borderWidth + 50;
+				
+				// Randomly choose which edge to spawn on
+				const edge = Math.floor(Math.random() * 4);
+				
+				switch (edge) {
+					case 0: // Top edge
+						x = safeZone + Math.random() * (mapSize - 2 * safeZone);
+						y = safeZone;
+						break;
+					case 1: // Right edge
+						x = mapSize - safeZone;
+						y = safeZone + Math.random() * (mapSize - 2 * safeZone);
+						break;
+					case 2: // Bottom edge
+						x = safeZone + Math.random() * (mapSize - 2 * safeZone);
+						y = mapSize - safeZone;
+						break;
+					case 3: // Left edge
+						x = safeZone;
+						y = safeZone + Math.random() * (mapSize - 2 * safeZone);
+						break;
+				}
+				
+				// Add components to the enemy
+				entityManager
+					.addComponent(enemy, 'enemy', true) // Mark as enemy
+					.addComponent(enemy, 'sprite', sprite)
+					.addComponent(enemy, 'position', { x, y })
+					.addComponent(enemy, 'velocity', { x: 0, y: 0 })
+					.addComponent(enemy, 'drag', { x: 1, y: 1 })
+					.addComponent(enemy, 'maxVelocity', { x: 80, y: 80 }); // Slower than player
+			}
+		}
+	})
+	.addSystem({
+		label: "enemy-movement",
+		with: [
+			'position',
+			'velocity',
+			'enemy'
+		],
+		process(entities, deltaTime, entityManager, resourceManager) {
+			// Find the player
+			const players = entityManager.getEntitiesWithComponents(['player', 'position']);
+			if (players.length === 0) return; // No player found
+			
+			// Since we've verified the array is not empty, we know player exists
+			// TypeScript needs a non-null assertion to recognize this
+			const player = players[0]!;
+			const playerPos = player.components.position;
+			
+			// Make each enemy move toward the player
+			for (const enemy of entities) {
+				const enemyPos = enemy.components.position;
+				
+				// Calculate direction vector from enemy to player
+				const dirX = playerPos.x - enemyPos.x;
+				const dirY = playerPos.y - enemyPos.y;
+				
+				// Normalize the direction vector (make its length 1)
+				const length = Math.sqrt(dirX * dirX + dirY * dirY);
+				
+				if (length > 0) {
+					// Set the enemy velocity in the player's direction
+					const enemySpeed = 50; // Base movement speed
+					enemy.components.velocity.x = (dirX / length) * enemySpeed;
+					enemy.components.velocity.y = (dirY / length) * enemySpeed;
+				}
+			}
+		}
+	})
+	.addSystem({
+		label: "player-enemy-collision",
+		with: [
+			'player',
+			'position',
+			'sprite',
+			'health'
+		],
+		process(entities, deltaTime, entityManager, resourceManager) {
+			// We only care about the player entity
+			const player = entities[0];
+			if (!player) return;
+			
+			// Skip collision detection if player is invincible
+			if (player.components.invincible) {
+				// Update invincibility timer
+				player.components.invincible.timer += deltaTime;
+				
+				// If invincibility period is over, remove the component
+				if (player.components.invincible.timer >= player.components.invincible.duration) {
+					entityManager.removeComponent(player.id, 'invincible');
+					// Restore full opacity
+					player.components.sprite.alpha = 1.0;
+				}
+				return;
+			}
+			
+			// Get all enemies
+			const enemies = entityManager.getEntitiesWithComponents(['enemy', 'position', 'sprite']);
+			if (enemies.length === 0) return;
+			
+			// Player properties
+			const playerPos = player.components.position;
+			const playerSprite = player.components.sprite;
+			const playerHalfWidth = playerSprite.width / 2;
+			const playerHalfHeight = playerSprite.height / 2;
+			
+			// Check collision with each enemy
+			for (const enemy of enemies) {
+				const enemyPos = enemy.components.position;
+				const enemySprite = enemy.components.sprite;
+				const enemyHalfWidth = enemySprite.width / 2;
+				const enemyHalfHeight = enemySprite.height / 2;
+				
+				// Simple AABB (Axis-Aligned Bounding Box) collision detection
+				const collisionX = Math.abs(playerPos.x - enemyPos.x) < (playerHalfWidth + enemyHalfWidth);
+				const collisionY = Math.abs(playerPos.y - enemyPos.y) < (playerHalfHeight + enemyHalfHeight);
+				
+				// If collision on both axes, we have a hit
+				if (collisionX && collisionY) {
+					// Player takes damage (1 damage per enemy hit)
+					player.components.health.current -= 1;
+					
+					// Add invincibility component
+					entityManager.addComponent(player.id, 'invincible', {
+						timer: 0,
+						duration: 0.5 // 0.5 seconds of invincibility
+					});
+					
+					// Set player opacity to 50% during invincibility
+					player.components.sprite.alpha = 0.5;
+					
+					// No need to check other enemies since player is now invincible
+					break;
+				}
+			}
+			
+			// Check if player health reached zero
+			if (player.components.health.current <= 0) {
+				// Handle player death (could trigger game over event)
+				console.log("Player died!");
+				// You could implement game over or respawn logic here
+			}
+		}
+	})
+	.addSystem({
 		label: "initialize-game",
 		eventHandlers: {
 			initializeGame: {
@@ -180,9 +375,25 @@ game
 					const worldContainer = new Container();
 					pixi.stage.addChild(worldContainer);
 					
+					// Create UI container (fixed position, not affected by camera)
+					const uiContainer = new Container();
+					pixi.stage.addChild(uiContainer);
+					
+					// Create health display text
+					const healthText = new Text('Health: 30/30', {
+						fontFamily: 'Arial',
+						fontSize: 24,
+						fill: 0xffffff,
+						align: 'left',
+					});
+					healthText.position.set(20, 20);
+					uiContainer.addChild(healthText);
+					
 					// Update resources
 					resourceManager.add('pixi', pixi);
 					resourceManager.add('worldContainer', worldContainer);
+					resourceManager.add('uiContainer', uiContainer);
+					resourceManager.add('healthText', healthText);
 					
 					// Initialize map and player
 					eventBus.publish('initializeMap');
@@ -258,10 +469,31 @@ game
 						.addComponent(player, 'drag', { x: 3, y: 3 })
 						.addComponent(player, 'speed', { x: 3000, y: 3000 })
 						.addComponent(player, 'maxVelocity', { x: 1500, y: 1500 })
-						.addComponent(player, 'acceleration', { x: 1, y: 1 });
+						.addComponent(player, 'acceleration', { x: 1, y: 1 })
+						.addComponent(player, 'health', { current: 30, max: 30 });
 				},
 			},
 		},
+	})
+	.addSystem({
+		label: "update-health-display",
+		with: [
+			'player',
+			'health'
+		],
+		process(entities, deltaTime, entityManager, resourceManager) {
+			// We only care about the player entity
+			const player = entities[0];
+			if (!player) return;
+			
+			// Get the health text element
+			const healthText = resourceManager.get('healthText');
+			if (!healthText) return;
+			
+			// Update the health text
+			const health = player.components.health;
+			healthText.text = `Health: ${health.current}/${health.max}`;
+		}
 	});
 
 game.eventBus.publish('initializeGame');
