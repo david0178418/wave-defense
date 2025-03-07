@@ -47,9 +47,11 @@ game
 
 					resourceManager.add('pixi', pixi);
 					const player = entityManager.createEntity();
-					const sprite = new Sprite(Texture.WHITE);
-					sprite.width = 100;
-					sprite.height = 100;
+					const sprite = new Sprite({
+						texture: Texture.WHITE,
+						width: 50,
+						height: 50,
+					});
 					pixi.stage.addChild(sprite);
 					entityManager
 						.addComponent(player, 'player', true)
