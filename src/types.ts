@@ -1,4 +1,4 @@
-import type { Application, Sprite } from "pixi.js";
+import type { Application, Sprite, Container } from "pixi.js";
 import type { MovementComponents } from "./features/movement-feature";
 import type { PlayerControlComponents, PlayerControlResources } from "./features/player-control-feature";
 
@@ -17,6 +17,7 @@ interface Events {
 export
 interface Resources extends PlayerControlResources {
 	pixi: Application;
+	worldContainer: Container;
 }
 
 export
