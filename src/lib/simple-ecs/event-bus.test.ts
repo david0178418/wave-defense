@@ -123,7 +123,7 @@ describe('EventSystem', () => {
 		
 		world.addSystem({
 			label: 'HealthEventSystem',
-			with: ['health'] as const,
+			with: ['health'],
 			eventHandlers: {
 				healthChanged: {
 					handler: (data, eventBus, entityManager) => {
@@ -353,7 +353,7 @@ describe('EventSystem', () => {
 		// Create a movement system that reacts to health changes
 		world.addSystem({
 			label: 'HealthReactiveMovementSystem',
-			with: ['position'] as const,
+			with: ['position'],
 			eventHandlers: {
 				healthChanged: {
 					handler(
