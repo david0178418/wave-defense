@@ -285,7 +285,7 @@ game
 			'sprite',
 			'health'
 		],
-		process(entities, deltaTime, entityManager, resourceManager) {
+		process(entities, deltaTime, entityManager, resourceManager, eventBus) {
 			// We only care about the player entity
 			const player = entities[0];
 			if (!player) return;
@@ -346,9 +346,8 @@ game
 			
 			// Check if player health reached zero
 			if (player.components.health.current <= 0) {
-				// Handle player death (could trigger game over event)
-				console.log("Player died!");
-				// You could implement game over or respawn logic here
+				// Trigger game over event
+				eventBus.publish('gameOver');
 			}
 		}
 	})
@@ -494,6 +493,72 @@ game
 			const health = player.components.health;
 			healthText.text = `Health: ${health.current}/${health.max}`;
 		}
+	})
+	.addSystem({
+		label: "game-over-handler",
+		eventHandlers: {
+			gameOver: {
+				handler(data: undefined, entityManager: EntityManager<Components>, resourceManager: ResourceManager<Resources>, eventBus: EventBus<Events>) {
+					console.log("Game Over! Resetting game...");
+					
+					// Display game over message
+					const healthText = resourceManager.get('healthText');
+					healthText.text = "GAME OVER - Resetting...";
+					
+					// Remove all enemies
+					const enemies = entityManager.getEntitiesWithComponents(['enemy']);
+					for (const enemy of enemies) {
+						// Remove enemy sprite from the scene
+						if (enemy.components.sprite) {
+							const worldContainer = resourceManager.get('worldContainer');
+							worldContainer.removeChild(enemy.components.sprite);
+						}
+						
+						// Remove enemy entity
+						entityManager.removeEntity(enemy.id);
+					}
+					
+					// Reset enemy spawning state
+					const enemyState = resourceManager.get('enemyState');
+					enemyState.spawnTimer = 0;
+					
+					// Wait a brief moment before resetting the player
+					setTimeout(() => {
+						// Reset player position to the middle of the map
+						const players = entityManager.getEntitiesWithComponents(['player']);
+						if (players.length > 0) {
+							const player = players[0];
+							const mapSize = resourceManager.get('config').mapSize;
+							
+							// Make sure player has all required components
+							if (player && player.components.position && player.components.velocity && player.components.health) {
+								// Reset position to center of map
+								player.components.position.x = mapSize / 2;
+								player.components.position.y = mapSize / 2;
+								
+								// Reset velocity
+								player.components.velocity.x = 0;
+								player.components.velocity.y = 0;
+								
+								// Reset health
+								player.components.health.current = player.components.health.max;
+								
+								// Remove invincibility if present
+								if (player.components.invincible) {
+									entityManager.removeComponent(player.id, 'invincible');
+									if (player.components.sprite) {
+										player.components.sprite.alpha = 1.0;
+									}
+								}
+								
+								// Update health display
+								healthText.text = `Health: ${player.components.health.current}/${player.components.health.max}`;
+							}
+						}
+					}, 2000); // 2 second delay before resetting
+				},
+			},
+		},
 	});
 
 game.eventBus.publish('initializeGame');

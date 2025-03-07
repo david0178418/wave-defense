@@ -16,6 +16,7 @@ interface Events {
 	initializeGame: undefined;
 	initializeMap: undefined;
 	initializePlayer: undefined;
+	gameOver: undefined;
 }
 
 export
