@@ -18,7 +18,7 @@ game.addResource('config', {
 	deadzonePercentHeight: 0.2,
 });
 
-// Install features
+// add features
 movementFeature(game);
 playerControlFeature(game);
 enemyFeature(game);
