@@ -1,14 +1,17 @@
 import type { Application, Sprite, Container, Text } from "pixi.js";
 import type { MovementComponents } from "./features/movement-feature";
 import type { PlayerControlComponents, PlayerControlResources } from "./features/player-control-feature";
+import type { EnemyComponents, EnemyResources } from "./features/enemy-feature";
+import type { HealthComponents } from "./features/health-feature";
 
 export
-interface Components extends MovementComponents, PlayerControlComponents {
+interface Components extends 
+	MovementComponents, 
+	PlayerControlComponents,
+	EnemyComponents,
+	HealthComponents {
 	player: true;
-	enemy: true;
-	health: { current: number; max: number };
 	sprite: Sprite;
-	invincible: { timer: number; duration: number };
 }
 
 export
@@ -20,7 +23,9 @@ interface Events {
 }
 
 export
-interface Resources extends PlayerControlResources {
+interface Resources extends 
+	PlayerControlResources,
+	EnemyResources {
 	pixi: Application;
 	worldContainer: Container;
 	uiContainer: Container;
@@ -29,10 +34,6 @@ interface Resources extends PlayerControlResources {
 		mapSize: number;
 		deadzonePercentWidth: number;
 		deadzonePercentHeight: number;
-	};
-	enemyState: {
-		spawnTimer: number;
-		maxEnemies: number;
 	};
 }
 
