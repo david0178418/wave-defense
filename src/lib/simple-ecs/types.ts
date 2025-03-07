@@ -26,6 +26,16 @@ interface FilteredEntity<
     };
 }
 
+export
+interface QueryConfig<
+	ComponentTypes,
+	WithComponents extends keyof ComponentTypes,
+	WithoutComponents extends keyof ComponentTypes,
+> {
+	with: ReadonlyArray<WithComponents>;
+	without?: ReadonlyArray<WithoutComponents>;
+}
+
 export 
 interface System<
 	ComponentTypes,
@@ -35,10 +45,13 @@ interface System<
 	ResourceTypes = any,
 > {
 	label: string;
-	with?: ReadonlyArray<WithComponents>;
-	without?: ReadonlyArray<WithoutComponents>;
+	entityQueries?: {
+		[queryName: string]: QueryConfig<ComponentTypes, WithComponents, WithoutComponents>;
+	};
 	process?(
-		entities: FilteredEntity<ComponentTypes, WithComponents, WithoutComponents>[], 
+		queries: {
+			[queryName: string]: Array<FilteredEntity<ComponentTypes, WithComponents, WithoutComponents>>;
+		} | Array<FilteredEntity<ComponentTypes, WithComponents, WithoutComponents>>, 
 		deltaTime: number, 
 		entityManager: EntityManager<ComponentTypes>,
 		resourceManager: ResourceManager<ResourceTypes>,

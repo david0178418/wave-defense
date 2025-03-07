@@ -83,14 +83,44 @@ class SimpleECS<
 
 	update(deltaTime: number) {
 		for (const system of this._systems) {
-			const requiredComponents = system.with || [];
-			const excludedComponents = system.without || [];
-			const entities = this._entityManager.getEntitiesWithComponents(
-				requiredComponents,
-				excludedComponents,
-			);
+			const queries: { [queryName: string]: any } = {};
+			
+			// Process each query defined in the system
+			if (system.entityQueries) {
+				for (const [queryName, queryConfig] of Object.entries(system.entityQueries)) {
+					const requiredComponents = queryConfig.with || [];
+					const excludedComponents = queryConfig.without || [];
+					
+					queries[queryName] = this._entityManager.getEntitiesWithComponents(
+						requiredComponents as any,
+						excludedComponents as any,
+					);
+				}
+			} else if ('with' in system || 'without' in system) {
+				// Legacy support for tests - will be removed later
+				const requiredComponents = (system as any).with || [];
+				const excludedComponents = (system as any).without || [];
+				
+				const entities = this._entityManager.getEntitiesWithComponents(
+					requiredComponents,
+					excludedComponents,
+				);
+				
+				// Pass entities directly for backward compatibility
+				system.process?.(
+					entities as any,
+					deltaTime,
+					this._entityManager,
+					this._resourceManager,
+					this._eventBus,
+				);
+				
+				// Skip the normal process call below
+				continue;
+			}
+			
 			system.process?.(
-				entities,
+				queries,
 				deltaTime,
 				this._entityManager,
 				this._resourceManager,
