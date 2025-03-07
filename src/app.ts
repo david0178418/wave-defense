@@ -1,71 +1,18 @@
 import { Application, Sprite, Texture } from "pixi.js";
 import SimpleECS from "./lib/simple-ecs";
-
-interface Components {
-	acceleration: { x: number; y: number };
-	drag: { x: number; y: number };
-	frozen: boolean;
-	health: { current: number; max: number };
-	position: { x: number; y: number };
-	sprite: Sprite;
-	velocity: { x: number; y: number };
-}
-
-interface Events {
-	initializeGame: undefined;
-}
-
-interface Resources {
-	pixi: Application;
-}
+import movementFeature from "./features/movement-feature";
+import playerControlFeature from "./features/player-control-feature";
+import type { Components, Events, Resources } from "./types";
 
 const game = new SimpleECS<Components, Events, Resources>();
 
+game.addResource('pixi', new Application());
+
+// Initialize features
+movementFeature(game);
+playerControlFeature(game);
+
 game
-	.addResource('pixi', new Application())
-	.addSystem({
-		label: "apply-velocity",
-		with: [
-			'position',
-			'velocity',
-		],
-		without: ['frozen'],
-		process(entities, deltaTime) {
-			for (const entity of entities) {
-				entity.components.position.x += entity.components.velocity.x * deltaTime;
-				entity.components.position.y += entity.components.velocity.y * deltaTime;
-			}
-		},
-	})
-	// Are 'apply-acceleration' and 'apply-velocity' the same system?
-	.addSystem({
-		label: "apply-acceleration",
-		with: [
-			'velocity',
-			'acceleration',
-		],
-		without: ['frozen'],
-		process(entities, deltaTime) {
-			for (const entity of entities) {
-				entity.components.velocity.x += entity.components.acceleration.x * deltaTime;
-				entity.components.velocity.y += entity.components.acceleration.y * deltaTime;
-			}
-		},
-	})
-	.addSystem({
-		label: "apply-drag",
-		with: [
-			'velocity',
-			'drag',
-		],
-		without: ['frozen'],
-		process(entities, deltaTime) {
-			for (const entity of entities) {
-				entity.components.velocity.x *= entity.components.drag.x * deltaTime;
-				entity.components.velocity.y *= entity.components.drag.y * deltaTime;
-			}
-		},
-	})
 	.addSystem({
 		label: "update-sprite-position",
 		with: [
@@ -104,10 +51,15 @@ game
 					sprite.width = 100;
 					sprite.height = 100;
 					pixi.stage.addChild(sprite);
-					entityManager.addComponent(player, 'sprite', sprite);
-					entityManager.addComponent(player, 'position', { x: 0, y: 0 });
-					entityManager.addComponent(player, 'velocity', { x: 0, y: 0 });
-					entityManager.addComponent(player, 'acceleration', { x: 1, y: 1 });
+					entityManager
+						.addComponent(player, 'player', true)
+						.addComponent(player, 'sprite', sprite)
+						.addComponent(player, 'position', { x: 0, y: 0 })
+						.addComponent(player, 'velocity', { x: 0, y: 0 })
+						.addComponent(player, 'drag', { x: 3, y: 3 })
+						.addComponent(player, 'speed', { x: 3000, y: 3000 })
+						.addComponent(player, 'maxVelocity', { x: 1500, y: 1500 })
+						.addComponent(player, 'acceleration', { x: 1, y: 1 });
 					
 				},
 			},
