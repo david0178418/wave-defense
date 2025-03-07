@@ -12,6 +12,8 @@ interface Components extends MovementComponents, PlayerControlComponents {
 export
 interface Events {
 	initializeGame: undefined;
+	initializeMap: undefined;
+	initializePlayer: undefined;
 }
 
 export

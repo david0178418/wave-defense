@@ -3,6 +3,9 @@ import SimpleECS from "./lib/simple-ecs";
 import movementFeature from "./features/movement-feature";
 import playerControlFeature from "./features/player-control-feature";
 import type { Components, Events, Resources } from "./types";
+import type EntityManager from "./lib/simple-ecs/entity-manager";
+import type ResourceManager from "./lib/simple-ecs/resource-manager";
+import type EventBus from "./lib/simple-ecs/event-bus";
 
 const game = new SimpleECS<Components, Events, Resources>();
 
@@ -20,19 +23,6 @@ movementFeature(game);
 playerControlFeature(game);
 
 game
-	.addSystem({
-		label: "update-sprite-position",
-		with: [
-			'position',
-			'sprite',
-		],
-		without: ['frozen'],
-		process(entities, deltaTime, entityManager, resourceManager) {
-			for (const entity of entities) {
-				entity.components.sprite.position.set(entity.components.position.x, entity.components.position.y);
-			}
-		},
-	})
 	.addSystem({
 		label: "camera-follow",
 		with: [
@@ -109,6 +99,65 @@ game
 		},
 	})
 	.addSystem({
+		label: "map-collision",
+		with: [
+			'position',
+			'velocity',
+			'sprite',
+		],
+		process(entities, deltaTime, entityManager, resourceManager) {
+			const mapSize = 2000;
+			const borderWidth = 10;
+			
+			for (const entity of entities) {
+				const position = entity.components.position;
+				const sprite = entity.components.sprite;
+				const halfWidth = sprite.width / 2;
+				const halfHeight = sprite.height / 2;
+				
+				// Calculate entity boundaries based on its position and sprite dimensions
+				// Taking into account that position is at center due to sprite anchor being 0.5
+				
+				// Check left boundary
+				if (position.x - halfWidth < borderWidth) {
+					position.x = borderWidth + halfWidth;
+					entity.components.velocity.x = 0;
+				}
+				
+				// Check right boundary
+				if (position.x + halfWidth > mapSize - borderWidth) {
+					position.x = mapSize - borderWidth - halfWidth;
+					entity.components.velocity.x = 0;
+				}
+				
+				// Check top boundary
+				if (position.y - halfHeight < borderWidth) {
+					position.y = borderWidth + halfHeight;
+					entity.components.velocity.y = 0;
+				}
+				
+				// Check bottom boundary
+				if (position.y + halfHeight > mapSize - borderWidth) {
+					position.y = mapSize - borderWidth - halfHeight;
+					entity.components.velocity.y = 0;
+				}
+			}
+		},
+	})
+	.addSystem({
+		label: "update-sprite-position",
+		with: [
+			'position',
+			'sprite',
+		],
+		without: ['frozen'],
+		process(entities, deltaTime, entityManager, resourceManager) {
+			for (const entity of entities) {
+				entity.components.sprite.position.set(entity.components.position.x, entity.components.position.y);
+			}
+		},
+	})
+	.addSystem({
 		label: "initialize-game",
 		eventHandlers: {
 			initializeGame: {
@@ -131,7 +180,23 @@ game
 					const worldContainer = new Container();
 					pixi.stage.addChild(worldContainer);
 					
-					// Create the map with borders
+					// Update resources
+					resourceManager.add('pixi', pixi);
+					resourceManager.add('worldContainer', worldContainer);
+					
+					// Initialize map and player
+					eventBus.publish('initializeMap');
+					eventBus.publish('initializePlayer');
+				},
+			},
+		},
+	})
+	.addSystem({
+		label: "initialize-map",
+		eventHandlers: {
+			initializeMap: {
+				handler(data: undefined, entityManager: EntityManager<Components>, resourceManager: ResourceManager<Resources>, eventBus: EventBus<Events>) {
+					const worldContainer = resourceManager.get('worldContainer');
 					const mapSize = 2000;
 					const map = new Container();
 					worldContainer.addChild(map);
@@ -159,10 +224,17 @@ game
 					
 					mapBorders.endFill();
 					map.addChild(mapBorders);
-
-					// Update resources
-					resourceManager.add('pixi', pixi);
-					resourceManager.add('worldContainer', worldContainer);
+				},
+			},
+		},
+	})
+	.addSystem({
+		label: "initialize-player",
+		eventHandlers: {
+			initializePlayer: {
+				handler(data: undefined, entityManager: EntityManager<Components>, resourceManager: ResourceManager<Resources>, eventBus: EventBus<Events>) {
+					const worldContainer = resourceManager.get('worldContainer');
+					const mapSize = resourceManager.get('config').mapSize;
 					
 					const player = entityManager.createEntity();
 					const sprite = new Sprite({
@@ -189,47 +261,6 @@ game
 						.addComponent(player, 'acceleration', { x: 1, y: 1 });
 				},
 			},
-		},
-	})
-	.addSystem({
-		label: "map-collision",
-		with: [
-			'position',
-			'sprite',
-		],
-		process(entities, deltaTime, entityManager, resourceManager) {
-			const mapSize = 2000;
-			const borderWidth = 10;
-			
-			for (const entity of entities) {
-				const position = entity.components.position;
-				const sprite = entity.components.sprite;
-				const halfWidth = sprite.width / 2;
-				const halfHeight = sprite.height / 2;
-				
-				// Calculate entity boundaries based on its position and sprite dimensions
-				// Taking into account that position is at center due to sprite anchor being 0.5
-				
-				// Check left boundary
-				if (position.x - halfWidth < borderWidth) {
-					position.x = borderWidth + halfWidth;
-				}
-				
-				// Check right boundary
-				if (position.x + halfWidth > mapSize - borderWidth) {
-					position.x = mapSize - borderWidth - halfWidth;
-				}
-				
-				// Check top boundary
-				if (position.y - halfHeight < borderWidth) {
-					position.y = borderWidth + halfHeight;
-				}
-				
-				// Check bottom boundary
-				if (position.y + halfHeight > mapSize - borderWidth) {
-					position.y = mapSize - borderWidth - halfHeight;
-				}
-			}
 		},
 	});
 
