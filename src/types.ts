@@ -18,6 +18,11 @@ export
 interface Resources extends PlayerControlResources {
 	pixi: Application;
 	worldContainer: Container;
+	config: {
+		mapSize: number;
+		deadzonePercentWidth: number;
+		deadzonePercentHeight: number;
+	};
 }
 
 export

@@ -6,7 +6,14 @@ import type { Components, Events, Resources } from "./types";
 
 const game = new SimpleECS<Components, Events, Resources>();
 
-game.addResource('pixi', new Application());
+game
+	.addResource('config', {
+		mapSize: 2000,
+		deadzonePercentWidth: 0.2,
+		deadzonePercentHeight: 0.2,
+	})
+	.addResource('pixi', new Application())
+	.addResource('worldContainer', new Container());
 
 // Initialize features
 movementFeature(game);
@@ -38,10 +45,12 @@ game
 			
 			const pixi = resourceManager.get('pixi');
 			const worldContainer = resourceManager.get('worldContainer');
+			const {
+				mapSize,
+				deadzonePercentWidth,
+				deadzonePercentHeight,
+			} = resourceManager.get('config');
 			
-			// Define deadzone dimensions (as a percentage of screen size)
-			const deadzonePercentWidth = 0.2; // 20% of screen width
-			const deadzonePercentHeight = 0.2; // 20% of screen height
 			
 			const deadzoneWidth = pixi.screen.width * deadzonePercentWidth;
 			const deadzoneHeight = pixi.screen.height * deadzonePercentHeight;
@@ -86,6 +95,17 @@ game
 			// Smoothly move camera toward target position
 			worldContainer.position.x += (targetCameraX - worldContainer.position.x) * smoothingMultiplier;
 			worldContainer.position.y += (targetCameraY - worldContainer.position.y) * smoothingMultiplier;
+			
+			// Limit camera to map boundaries
+			// Calculate the maximum allowed camera positions to prevent showing outside the map
+			const minCameraX = -(mapSize - pixi.screen.width);
+			const minCameraY = -(mapSize - pixi.screen.height);
+			const maxCameraX = 0;
+			const maxCameraY = 0;
+			
+			// Apply camera boundaries
+			worldContainer.position.x = Math.max(minCameraX, Math.min(maxCameraX, worldContainer.position.x));
+			worldContainer.position.y = Math.max(minCameraY, Math.min(maxCameraY, worldContainer.position.y));
 		},
 	})
 	.addSystem({
