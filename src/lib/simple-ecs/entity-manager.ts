@@ -108,4 +108,8 @@ class EntityManager<ComponentTypes> {
 		// Remove the entity itself
 		return this.entities.delete(entityId);
 	}
+
+	getEntity(entityId: number): Entity<ComponentTypes> | undefined {
+		return this.entities.get(entityId);
+	}
 }

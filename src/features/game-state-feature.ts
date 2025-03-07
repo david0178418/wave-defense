@@ -4,6 +4,8 @@ import type { Components, Resources, Events } from "../types";
 import type EntityManager from "../lib/simple-ecs/entity-manager";
 import type ResourceManager from "../lib/simple-ecs/resource-manager";
 import type EventBus from "../lib/simple-ecs/event-bus";
+import { EntityType } from "./entity-type-feature";
+import { DamageType } from "./combat-feature";
 
 export
 interface GameStateComponents {
@@ -122,6 +124,7 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 						const startX = mapSize / 2;
 						const startY = mapSize / 2;
 						
+						// Add basic components
 						entityManager
 							.addComponent(player, 'player', true)
 							.addComponent(player, 'sprite', sprite)
@@ -130,8 +133,38 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 							.addComponent(player, 'drag', { x: 3, y: 3 })
 							.addComponent(player, 'speed', { x: 3000, y: 3000 })
 							.addComponent(player, 'maxVelocity', { x: 1500, y: 1500 })
-							.addComponent(player, 'acceleration', { x: 1, y: 1 })
-							.addComponent(player, 'health', { current: 30, max: 30 });
+							.addComponent(player, 'acceleration', { x: 1, y: 1 });
+						
+						// Add new component system components
+						
+						// Entity type
+						entityManager.addComponent(player, 'entityType', {
+							type: EntityType.PLAYER,
+							faction: 'player'
+						});
+						
+						// Health
+						entityManager.addComponent(player, 'health', {
+							current: 30,
+							max: 30
+						});
+						
+						// Hitbox for collision detection
+						entityManager.addComponent(player, 'hitbox', {
+							width: 50,
+							height: 50,
+							offsetX: 0,
+							offsetY: 0
+						});
+						
+						// Defense component with basic physical resistance
+						entityManager.addComponent(player, 'defense', {
+							resistances: {
+								[DamageType.PHYSICAL]: 0.1 // 10% resistance to physical damage
+							},
+							immunities: [],
+							invulnerable: false
+						});
 					},
 				},
 			},

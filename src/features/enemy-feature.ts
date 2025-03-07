@@ -1,6 +1,8 @@
 import { Sprite, Texture } from "pixi.js";
 import SimpleECS, { Feature } from "../lib/simple-ecs";
 import type { Components, Resources, Events } from "../types";
+import { EntityType } from "./entity-type-feature";
+import { DamageType } from "./combat-feature";
 
 export
 interface EnemyComponents {
@@ -14,6 +16,43 @@ interface EnemyResources {
 		maxEnemies: number;
 	};
 }
+
+// Define stats for different enemy types
+export
+interface EnemyStats {
+	health: number;
+	speed: number;
+	damage: number;
+	size: number;
+	color: number; // PIXI tint color
+}
+
+// Enemy type to stats mapping
+const ENEMY_STATS: Record<EntityType, EnemyStats> = {
+	[EntityType.PLAYER]: { health: 0, speed: 0, damage: 0, size: 0, color: 0 }, // Not used
+	[EntityType.ENEMY_BASIC]: {
+		health: 3,
+		speed: 50,
+		damage: 1,
+		size: 30,
+		color: 0xFF0000, // red
+	},
+	[EntityType.ENEMY_FAST]: {
+		health: 1,
+		speed: 100,
+		damage: 1,
+		size: 20,
+		color: 0xFF00FF, // magenta
+	},
+	[EntityType.ENEMY_TANK]: {
+		health: 6,
+		speed: 30,
+		damage: 2,
+		size: 40,
+		color: 0x800000, // dark red
+	},
+	[EntityType.PROJECTILE]: { health: 0, speed: 0, damage: 0, size: 0, color: 0 }, // Not used
+};
 
 export default
 function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
@@ -51,12 +90,25 @@ function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
 					// Create a new enemy entity
 					const enemy = entityManager.createEntity();
 					
-					// Create an enemy sprite (red square)
+					// Choose a random enemy type (biased toward basic enemies for now)
+					const randomValue = Math.random();
+					let enemyType = EntityType.ENEMY_BASIC;
+					
+					if (randomValue > 0.85) {
+						enemyType = EntityType.ENEMY_TANK;
+					} else if (randomValue > 0.65) {
+						enemyType = EntityType.ENEMY_FAST;
+					}
+					
+					// Get stats for this enemy type
+					const stats = ENEMY_STATS[enemyType] || ENEMY_STATS[EntityType.ENEMY_BASIC];
+					
+					// Create an enemy sprite
 					const sprite = new Sprite({
 						texture: Texture.WHITE,
-						width: 30,
-						height: 30,
-						tint: 0xFF0000, // Red color
+						width: stats.size,
+						height: stats.size,
+						tint: stats.color,
 					});
 					
 					// Set the anchor point to the center of the sprite
@@ -90,14 +142,40 @@ function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
 							break;
 					}
 					
-					// Add components to the enemy
+					// Add basic components to all enemies
 					entityManager
 						.addComponent(enemy, 'enemy', true) // Mark as enemy
 						.addComponent(enemy, 'sprite', sprite)
 						.addComponent(enemy, 'position', { x, y })
 						.addComponent(enemy, 'velocity', { x: 0, y: 0 })
 						.addComponent(enemy, 'drag', { x: 1, y: 1 })
-						.addComponent(enemy, 'maxVelocity', { x: 80, y: 80 }); // Slower than player
+						.addComponent(enemy, 'maxVelocity', { x: stats.speed * 1.5, y: stats.speed * 1.5 }); // Higher than speed to allow for bursts
+					
+					// Add entity type component
+					entityManager.addComponent(enemy, 'entityType', {
+						type: enemyType,
+						faction: 'enemy'
+					});
+					
+					// Add health component
+					entityManager.addComponent(enemy, 'health', {
+						current: stats.health,
+						max: stats.health
+					});
+					
+					// Add hitbox component
+					entityManager.addComponent(enemy, 'hitbox', {
+						width: stats.size,
+						height: stats.size,
+						offsetX: 0,
+						offsetY: 0
+					});
+					
+					// Add damage dealer component for contact damage
+					entityManager.addComponent(enemy, 'damageDealer', {
+						amount: stats.damage,
+						type: DamageType.PHYSICAL
+					});
 				}
 			}
 		})
@@ -110,12 +188,17 @@ function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
 			],
 			process(entities, deltaTime, entityManager, resourceManager) {
 				// Find the player
-				const players = entityManager.getEntitiesWithComponents(['player', 'position']);
+				const players = entityManager.getEntitiesWithComponents(['entityType']);
 				if (players.length === 0) return; // No player found
 				
-				// Since we've verified the array is not empty, we know player exists
-				// TypeScript needs a non-null assertion to recognize this
-				const player = players[0]!;
+				// Find the first entity with player type
+				const player = players.find(entity => 
+					entity.components.entityType && 
+					entity.components.entityType.type === EntityType.PLAYER
+				);
+				
+				if (!player || !player.components.position) return;
+				
 				const playerPos = player.components.position;
 				
 				// Make each enemy move toward the player
@@ -130,8 +213,16 @@ function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
 					const length = Math.sqrt(dirX * dirX + dirY * dirY);
 					
 					if (length > 0) {
+						// Get this enemy's speed based on type
+						let enemySpeed = 50; // Default
+						if (enemy.components.entityType) {
+							const stats = ENEMY_STATS[enemy.components.entityType.type];
+							if (stats) {
+								enemySpeed = stats.speed;
+							}
+						}
+						
 						// Set the enemy velocity in the player's direction
-						const enemySpeed = 50; // Base movement speed
 						enemy.components.velocity.x = (dirX / length) * enemySpeed;
 						enemy.components.velocity.y = (dirY / length) * enemySpeed;
 					}
