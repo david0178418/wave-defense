@@ -1,4 +1,4 @@
-import SimpleECS, { Feature } from "../lib/simple-ecs";
+import SimpleECS, { Feature, createSystem } from "../lib/simple-ecs";
 import type { Components, Resources, Events } from "../types";
 import { EntityType } from "./entity-type-feature";
 
@@ -38,14 +38,16 @@ export default
 function collisionFeature(game: SimpleECS<Components, Events, Resources>) {
 	return new Feature<Components, Events, Resources>(game)
 		// Detect and process collisions between entities
-		.addSystem({
-			label: "collision-detection",
-			with: [
-				'position',
-				'hitbox',
-				'entityType', // Require entity type for faction checking
-			],
-			process(entities, deltaTime, entityManager, resourceManager, eventBus) {
+		.addSystem(
+			createSystem<Components>('collision-detection')
+			.addQuery('entities', {
+				with: [
+					'position',
+					'hitbox',
+					'entityType', // Require entity type for faction checking
+				],
+			})
+			.setProcess(({ entities }, deltaTime, entityManager, resourceManager, eventBus) => {
 				// Clear previous frame collisions first
 				for (const entity of entities) {
 					// Initialize collision component if needed
@@ -120,7 +122,8 @@ function collisionFeature(game: SimpleECS<Components, Events, Resources>) {
 						}
 					}
 				}
-			}
-		})
+			})
+			.build()
+		)
 		.install();
 } 

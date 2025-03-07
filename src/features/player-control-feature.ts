@@ -1,4 +1,4 @@
-import SimpleECS, { Feature } from "../lib/simple-ecs";
+import SimpleECS, { Feature, createSystem } from "../lib/simple-ecs";
 import type { MovementComponents } from "./movement-feature";
 
 export
@@ -23,37 +23,38 @@ export default
 function playerControlFeature(game: SimpleECS<any, any, any>) {
 	return new Feature<PlayerControlComponents, Record<string, any>, PlayerControlResources>(game)
 		.addResource('activeKeyMap', keyMap())
-		.addSystem({
-			label: "player-control",
-			with: [
-				'acceleration',
-				'speed',
-				'player',
-			],
-			process(entities, deltaTime, entityManager, resourceManager) {
-				const [player] = entities;
+		.addSystem(
+			createSystem<PlayerControlComponents>('player-control')
+				.addQuery('players', {
+					with: ['acceleration', 'speed', 'player'] as const
+				})
+				.setProcess((queries, deltaTime, entityManager, resourceManager) => {
+					const players = queries.players;
+					if (!players || players.length === 0) return;
+					
+					const player = players[0];
+					if (!player) return;
+					
+					const activeKeyMap = resourceManager.get('activeKeyMap');
 	
-				if(!player) return;
+					if(activeKeyMap.up) {
+						player.components.acceleration.y = -player.components.speed.y;
+					} else if(activeKeyMap.down) {
+						player.components.acceleration.y = player.components.speed.y;
+					} else {
+						player.components.acceleration.y = 0;
+					}
 	
-				const activeKeyMap = resourceManager.get('activeKeyMap');
-	
-				if(activeKeyMap.up) {
-					player.components.acceleration.y = -player.components.speed.y;
-				} else if(activeKeyMap.down) {
-					player.components.acceleration.y = player.components.speed.y;
-				} else {
-					player.components.acceleration.y = 0;
-				}
-	
-				if(activeKeyMap.left) {
-					player.components.acceleration.x = -player.components.speed.x;
-				} else if(activeKeyMap.right) {
-					player.components.acceleration.x = player.components.speed.x;
-				} else {
-					player.components.acceleration.x = 0;
-				}
-			},
-		})
+					if(activeKeyMap.left) {
+						player.components.acceleration.x = -player.components.speed.x;
+					} else if(activeKeyMap.right) {
+						player.components.acceleration.x = player.components.speed.x;
+					} else {
+						player.components.acceleration.x = 0;
+					}
+				})
+				.build()
+		)
 		.install();
 }
 
