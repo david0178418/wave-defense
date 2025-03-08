@@ -15,57 +15,46 @@ export default
 function movementFeature(game: SimpleECS<any, any, any>) {
 	return new Feature<MovementComponents>(game)
 		.addSystem(
-			createSystem<MovementComponents>('apply-velocity')
-				.addQuery('entities', {
-					with: ['position', 'velocity'] as const,
-					without: ['frozen'] as const
+			createSystem<MovementComponents>('movement-system')
+				.addQuery('positionEntities', {
+					with: ['position', 'velocity'],
+					without: ['frozen']
+				})
+				.addQuery('accelerationEntities', {
+					with: ['velocity', 'acceleration'],
+					without: ['frozen']
+				})
+				.addQuery('dragEntities', {
+					with: ['velocity', 'drag'],
+					without: ['frozen']
+				})
+				.addQuery('maxVelocityEntities', {
+					with: ['velocity', 'maxVelocity'],
+					without: ['frozen']
 				})
 				.setProcess((queries, deltaTime) => {
-					for (const entity of queries.entities) {
-						entity.components.position.x += entity.components.velocity.x * deltaTime;
-						entity.components.position.y += entity.components.velocity.y * deltaTime;
-					}
-				})
-				.build()
-		)
-		.addSystem(
-			createSystem<MovementComponents>('apply-acceleration')
-				.addQuery('entities', {
-					with: ['velocity', 'acceleration'] as const,
-					without: ['frozen'] as const
-				})
-				.setProcess((queries, deltaTime) => {
-					for (const entity of queries.entities) {
+					// Apply acceleration
+					for (const entity of queries.accelerationEntities) {
 						entity.components.velocity.x += entity.components.acceleration.x * deltaTime;
 						entity.components.velocity.y += entity.components.acceleration.y * deltaTime;
 					}
-				})
-				.build()
-		)
-		.addSystem(
-			createSystem<MovementComponents>('apply-drag')
-				.addQuery('entities', {
-					with: ['velocity', 'drag'] as const,
-					without: ['frozen'] as const
-				})
-				.setProcess((queries, deltaTime) => {
-					for (const entity of queries.entities) {
+					
+					// Apply drag
+					for (const entity of queries.dragEntities) {
 						entity.components.velocity.x -= entity.components.velocity.x * entity.components.drag.x * deltaTime;
 						entity.components.velocity.y -= entity.components.velocity.y * entity.components.drag.y * deltaTime;
 					}
-				})
-				.build()
-		)
-		.addSystem(
-			createSystem<MovementComponents>('apply-max-velocity')
-				.addQuery('entities', {
-					with: ['velocity', 'maxVelocity'] as const,
-					without: ['frozen'] as const
-				})
-				.setProcess((queries) => {
-					for (const entity of queries.entities) {
+					
+					// Apply max velocity
+					for (const entity of queries.maxVelocityEntities) {
 						entity.components.velocity.x = Math.min(Math.abs(entity.components.velocity.x), entity.components.maxVelocity.x) * Math.sign(entity.components.velocity.x);
 						entity.components.velocity.y = Math.min(Math.abs(entity.components.velocity.y), entity.components.maxVelocity.y) * Math.sign(entity.components.velocity.y);
+					}
+					
+					// Apply velocity
+					for (const entity of queries.positionEntities) {
+						entity.components.position.x += entity.components.velocity.x * deltaTime;
+						entity.components.position.y += entity.components.velocity.y * deltaTime;
 					}
 				})
 				.build()

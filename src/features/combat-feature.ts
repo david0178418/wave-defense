@@ -74,7 +74,7 @@ function combatFeature(game: SimpleECS<Components, Events, Resources>) {
 		.addSystem(
 			createSystem<Components>('damage-dealing')
 				.addQuery('damageDealers', {
-					with: ['position', 'sprite', 'damageDealer'] as const
+					with: ['position', 'sprite', 'damageDealer']
 				})
 				.setProcess((queries, deltaTime, entityManager, resourceManager, eventBus) => {
 					// This system is kept as a placeholder for future damage dealing logic
@@ -83,43 +83,40 @@ function combatFeature(game: SimpleECS<Components, Events, Resources>) {
 				})
 				.build()
 		)
-		
 		// Handles damage effects like invincibility and visual feedback
 		.addSystem(
 			createSystem<Components>('damage-effects')
-				.addQuery('sprites', {
-					with: ['sprite'] as const
+				.addQuery('invincibleEntities', {
+					with: ['sprite', 'invincible']
 				})
-				.setProcess((queries, deltaTime, entityManager, resourceManager) => {
-					if (!queries.sprites || queries.sprites.length === 0) return;
-					
-					// Process invincibility and damage effects
-					for (const entity of queries.sprites) {
-						// Process invincibility
-						if (entity.components.invincible) {
-							entity.components.invincible.timer += deltaTime;
-							
-							// End invincibility when duration is over
-							if (entity.components.invincible.timer >= entity.components.invincible.duration) {
-								entityManager.removeComponent(entity.id, 'invincible');
-								entity.components.sprite.alpha = 1.0; // Restore full opacity
-							}
-						}
+				.addQuery('damageEffectEntities', {
+					with: ['sprite', 'damageEffect']
+				})
+				.setProcess((queries, deltaTime, entityManager) => {
+					// Process invincibility
+					for (const entity of queries.invincibleEntities) {
+						entity.components.invincible.timer += deltaTime;
 						
-						// Process visual damage effects (flashing, etc.)
-						if (entity.components.damageEffect) {
-							entity.components.damageEffect.timer += deltaTime;
-							
-							// Flash the entity by alternating alpha
-							const phase = Math.sin(entity.components.damageEffect.timer * 30) * 0.5 + 0.5;
-							entity.components.sprite.alpha = entity.components.damageEffect.originalAlpha +
-								(entity.components.damageEffect.flashAlpha - entity.components.damageEffect.originalAlpha) * phase;
-							
-							// End effect when duration is over
-							if (entity.components.damageEffect.timer >= entity.components.damageEffect.duration) {
-								entityManager.removeComponent(entity.id, 'damageEffect');
-								entity.components.sprite.alpha = entity.components.damageEffect.originalAlpha;
-							}
+						// End invincibility when duration is over
+						if (entity.components.invincible.timer >= entity.components.invincible.duration) {
+							entityManager.removeComponent(entity.id, 'invincible');
+							entity.components.sprite.alpha = 1.0; // Restore full opacity
+						}
+					}
+					
+					// Process visual damage effects (flashing, etc.)
+					for (const entity of queries.damageEffectEntities) {
+						entity.components.damageEffect.timer += deltaTime;
+						
+						// Flash the entity by alternating alpha
+						const phase = Math.sin(entity.components.damageEffect.timer * 30) * 0.5 + 0.5;
+						entity.components.sprite.alpha = entity.components.damageEffect.originalAlpha +
+							(entity.components.damageEffect.flashAlpha - entity.components.damageEffect.originalAlpha) * phase;
+						
+						// End effect when duration is over
+						if (entity.components.damageEffect.timer >= entity.components.damageEffect.duration) {
+							entityManager.removeComponent(entity.id, 'damageEffect');
+							entity.components.sprite.alpha = entity.components.damageEffect.originalAlpha;
 						}
 					}
 				})

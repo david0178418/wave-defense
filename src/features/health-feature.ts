@@ -13,10 +13,10 @@ function healthFeature(game: SimpleECS<Components, Events, Resources>) {
 		.addSystem(
 			createSystem<Components>('player-enemy-collision')
 				.addQuery('players', {
-					with: ['player', 'position', 'sprite', 'health'] as const
+					with: ['player', 'position', 'sprite', 'health']
 				})
 				.addQuery('enemies', {
-					with: ['enemy', 'position', 'sprite'] as const
+					with: ['enemy', 'position', 'sprite']
 				})
 				.setProcess((queries, deltaTime, entityManager, resourceManager, eventBus) => {
 					const {
@@ -93,7 +93,7 @@ function healthFeature(game: SimpleECS<Components, Events, Resources>) {
 		.addSystem(
 			createSystem<Components>('update-health-display')
 				.addQuery('player', {
-					with: ['player', 'health'] as const
+					with: ['player', 'health']
 				})
 				.setProcess((queries, deltaTime, entityManager, resourceManager) => {
 					// We only care about the player entity
@@ -114,7 +114,7 @@ function healthFeature(game: SimpleECS<Components, Events, Resources>) {
 		.addSystem(
 			createSystem<Components>('map-collision')
 				.addQuery('entities', {
-					with: ['position', 'velocity', 'sprite'] as const
+					with: ['position', 'velocity', 'sprite']
 				})
 				.setProcess((queries, deltaTime, entityManager, resourceManager) => {
 					if (!queries.entities || queries.entities.length === 0) return;

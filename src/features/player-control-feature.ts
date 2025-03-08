@@ -26,7 +26,7 @@ function playerControlFeature(game: SimpleECS<any, any, any>) {
 		.addSystem(
 			createSystem<PlayerControlComponents>('player-control')
 				.addQuery('players', {
-					with: ['acceleration', 'speed', 'player'] as const
+					with: ['acceleration', 'speed', 'player']
 				})
 				.setProcess((queries, deltaTime, entityManager, resourceManager) => {
 					const players = queries.players;

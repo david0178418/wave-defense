@@ -59,14 +59,37 @@ function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
 	return new Feature<Components, Events, Resources>(game)
 		.addSystem(
 			createSystem<Components>('enemy-spawning')
-				.addQuery('enemies', {
-					with: ['enemy']
+				.addQuery('basicEnemies', {
+					with: ['enemy', 'entityType'],
+					without: []
+				})
+				.addQuery('fastEnemies', {
+					with: ['enemy', 'entityType'],
+					without: []
+				})
+				.addQuery('tankEnemies', {
+					with: ['enemy', 'entityType'],
+					without: []
 				})
 				.setProcess((queries, deltaTime, entityManager, resourceManager) => {
 					// Get the map size to know where enemies can spawn
 					const {
-						enemies,
+						basicEnemies,
+						fastEnemies,
+						tankEnemies,
 					} = queries;
+					
+					// Filter enemy arrays by type
+					const basicEnemyCount = basicEnemies.filter(e => 
+						e.components.entityType.type === EntityType.ENEMY_BASIC).length;
+					const fastEnemyCount = fastEnemies.filter(e => 
+						e.components.entityType.type === EntityType.ENEMY_FAST).length;
+					const tankEnemyCount = tankEnemies.filter(e => 
+						e.components.entityType.type === EntityType.ENEMY_TANK).length;
+					
+					// Total enemy count
+					const totalEnemies = basicEnemyCount + fastEnemyCount + tankEnemyCount;
+					
 					const mapSize = resourceManager.get('config').mapSize;
 					const borderWidth = 10;
 					const worldContainer = resourceManager.get('worldContainer');
@@ -90,19 +113,24 @@ function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
 						enemyState.spawnTimer = 0;
 						
 						// Count current enemies to enforce the limit
-						if (enemies.length >= enemyState.maxEnemies) return;
+						if (totalEnemies >= enemyState.maxEnemies) return;
 						
 						// Create a new enemy entity
 						const enemy = entityManager.createEntity();
 						
-						// Choose a random enemy type (biased toward basic enemies for now)
+						// Choose enemy type based on current distribution
+						// More sophisticated logic: prefer types that are underrepresented
 						const randomValue = Math.random();
 						let enemyType = EntityType.ENEMY_BASIC;
 						
-						if (randomValue > 0.85) {
-							enemyType = EntityType.ENEMY_TANK;
-						} else if (randomValue > 0.65) {
+						// Adjust probabilities based on current enemy distribution
+						const fastEnemyRatio = fastEnemyCount / Math.max(1, totalEnemies);
+						const tankEnemyRatio = tankEnemyCount / Math.max(1, totalEnemies);
+						
+						if (randomValue < 0.3 && fastEnemyRatio < 0.3) {
 							enemyType = EntityType.ENEMY_FAST;
+						} else if (randomValue < 0.5 && tankEnemyRatio < 0.2) {
+							enemyType = EntityType.ENEMY_TANK;
 						}
 						
 						// Get stats for this enemy type
@@ -188,7 +216,7 @@ function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
 		.addSystem(
 			createSystem<Components>('enemy-movement')
 				.addQuery('enemies', {
-					with: ['position', 'velocity', 'enemy'] as const
+					with: ['position', 'velocity', 'enemy']
 				})
 				.addQuery('players', {
 					with: [

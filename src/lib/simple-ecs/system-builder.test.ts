@@ -29,7 +29,7 @@ describe('SystemBuilder', () => {
 		// Create a system using the builder
 		const system = createSystem<TestComponents>('movement')
 			.addQuery('moving', {
-				with: ['position', 'velocity'] as const,
+				with: ['position', 'velocity'],
 			})
 			.setProcess((queries, deltaTime, entityManager) => {
 				// TypeScript correctly infers queries.moving
@@ -67,10 +67,10 @@ describe('SystemBuilder', () => {
 		// Create a system with multiple queries
 		const system = createSystem<TestComponents>('multiQuery')
 			.addQuery('positions', {
-				with: ['position'] as const,
+				with: ['position'],
 			})
 			.addQuery('velocities', {
-				with: ['velocity'] as const,
+				with: ['velocity'],
 			})
 			.setProcess((queries, deltaTime, entityManager) => {
 				// Access position entities with proper typing
@@ -108,7 +108,7 @@ describe('SystemBuilder', () => {
 		
 		const system = createSystem<TestComponents>('lifecycle')
 			.addQuery('entities', {
-				with: ['position'] as const,
+				with: ['position'],
 			})
 			.setProcess((queries, deltaTime, entityManager) => {
 				processRan = true;
@@ -151,8 +151,8 @@ describe('SystemBuilder', () => {
 		// Create a system that queries entities with position but without velocity
 		const system = createSystem<TestComponents>('staticObjects')
 			.addQuery('static', {
-				with: ['position'] as const,
-				without: ['velocity'] as const,
+				with: ['position'],
+				without: ['velocity'],
 			})
 			.setProcess((queries, deltaTime, entityManager) => {
 				for (const entity of queries.static) {

@@ -78,8 +78,8 @@ describe('SimpleECS', () => {
 		world.addSystem(
 			createSystem<TestComponents>('MovementSystem')
 			.addQuery('entities', {
-				with: ['position', 'velocity'] as const,
-				without: ['health'] as const,
+				with: ['position', 'velocity'],
+				without: ['health'],
 			})
 			.setProcess(({entities}) => {
 				for (const entity of entities) {
@@ -106,7 +106,7 @@ describe('SimpleECS', () => {
 		world.addSystem(
 			createSystem<TestComponents>('MovementSystem')
 			.addQuery('entities', {
-				with: ['position', 'velocity'] as const,
+				with: ['position', 'velocity'],
 			})
 			.setProcess(({entities}, deltaTime, entityManager) => {
 				for (const entity of entities) {
@@ -167,7 +167,7 @@ describe('SimpleECS', () => {
 		world.addSystem(
 			createSystem<TestComponents>('MovementControlSystem')
 			.addQuery('entities', {
-				with: ['state', 'velocity'] as const,
+				with: ['state', 'velocity'],
 			})
 			.setProcess(({entities}, deltaTime, entityManager) => {
 				for (const entity of entities) {
@@ -193,7 +193,7 @@ describe('SimpleECS', () => {
 		world.addSystem(
 			createSystem<TestComponents>('StateSystem')
 			.addQuery('entities', {
-				with: ['state', 'velocity'] as const,
+				with: ['state', 'velocity'],
 			})
 			.setProcess(({entities}, deltaTime, entityManager) => {
 				for (const entity of entities) {
@@ -227,7 +227,7 @@ describe('SimpleECS', () => {
 		world.addSystem(
 			createSystem<TestComponents>('LifetimeSystem')
 			.addQuery('entities', {
-				with: ['lifetime'] as const,
+				with: ['lifetime'],
 			})
 			.setProcess(({entities}, deltaTime, entityManager) => {
 				for (const entity of entities) {
@@ -292,7 +292,7 @@ describe('SimpleECS', () => {
 		world.addSystem(
 			createSystem<TestComponents>('DynamicComponentSystem')
 			.addQuery('entities', {
-				with: ['position'] as const,
+				with: ['position'],
 			})
 			.setProcess(({entities}, deltaTime, entityManager) => {
 				for (const entity of entities) {
