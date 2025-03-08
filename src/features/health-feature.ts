@@ -12,15 +12,23 @@ function healthFeature(game: SimpleECS<Components, Events, Resources>) {
 	return new Feature<Components, Events, Resources>(game)
 		.addSystem(
 			createSystem<Components>('player-enemy-collision')
-				.addQuery('player', {
+				.addQuery('players', {
 					with: ['player', 'position', 'sprite', 'health'] as const
 				})
+				.addQuery('enemies', {
+					with: ['enemy', 'position', 'sprite'] as const
+				})
 				.setProcess((queries, deltaTime, entityManager, resourceManager, eventBus) => {
+					const {
+						players,
+						enemies,
+					} = queries;
 					// We only care about the player entity
-					if (!queries.player || queries.player.length === 0) return;
-					const player = queries.player[0];
+					const [player] = players;
+
 					if (!player) return;
 					
+					// TODO Maybe replace with events?
 					// Skip collision detection if player is invincible
 					if (player.components.invincible) {
 						// Update invincibility timer
@@ -36,7 +44,6 @@ function healthFeature(game: SimpleECS<Components, Events, Resources>) {
 					}
 					
 					// Get all enemies
-					const enemies = entityManager.getEntitiesWithComponents(['enemy', 'position', 'sprite']);
 					if (enemies.length === 0) return;
 					
 					// Player properties

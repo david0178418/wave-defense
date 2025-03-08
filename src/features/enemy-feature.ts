@@ -59,8 +59,14 @@ function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
 	return new Feature<Components, Events, Resources>(game)
 		.addSystem(
 			createSystem<Components>('enemy-spawning')
+				.addQuery('enemies', {
+					with: ['enemy']
+				})
 				.setProcess((queries, deltaTime, entityManager, resourceManager) => {
 					// Get the map size to know where enemies can spawn
+					const {
+						enemies,
+					} = queries;
 					const mapSize = resourceManager.get('config').mapSize;
 					const borderWidth = 10;
 					const worldContainer = resourceManager.get('worldContainer');
@@ -84,7 +90,6 @@ function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
 						enemyState.spawnTimer = 0;
 						
 						// Count current enemies to enforce the limit
-						const enemies = entityManager.getEntitiesWithComponents(['enemy']);
 						if (enemies.length >= enemyState.maxEnemies) return;
 						
 						// Create a new enemy entity
@@ -185,21 +190,20 @@ function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
 				.addQuery('enemies', {
 					with: ['position', 'velocity', 'enemy'] as const
 				})
+				.addQuery('players', {
+					with: [
+						'player',
+						'position',
+					]
+				})
 				.setProcess((queries, deltaTime, entityManager, resourceManager) => {
 					// Check if we have any enemies
 					if (!queries.enemies || queries.enemies.length === 0) return;
 					
 					// Find the player
-					const players = entityManager.getEntitiesWithComponents(['entityType']);
-					if (players.length === 0) return; // No player found
-					
-					// Find the first entity with player type
-					const player = players.find(entity => 
-						entity.components.entityType && 
-						entity.components.entityType.type === EntityType.PLAYER
-					);
-					
-					if (!player || !player.components.position) return;
+					const [player] = queries.players;
+
+					if(!player) return;
 					
 					const playerPos = player.components.position;
 					

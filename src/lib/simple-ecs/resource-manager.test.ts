@@ -1,5 +1,6 @@
 import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
+import { createSystem } from './system-builder';
 
 interface TestComponents {
 	position: { x: number; y: number };
@@ -89,16 +90,12 @@ describe('Resource System', () => {
 		const processedEntities: any[] = [];
 		const accessedResources: Record<string, any> = {};
 		
-		world.addSystem({
-			label: 'resourceSystem',
-			with: ['position'],
-			process(
-				entities,
-				deltaTime,
-				entityManager,
-				resourceManager,
-				eventBus,
-			) {
+		world.addSystem(
+			createSystem<TestComponents>('resource-system')
+			.addQuery('entities', {
+				with: ['position'],
+			})
+			.setProcess(({entities}, deltaTime, entityManager, resourceManager, eventBus) => {
 				processedEntities.push(...entities);
 				
 				accessedResources['config'] = resourceManager.get('config');
@@ -112,8 +109,9 @@ describe('Resource System', () => {
 						gameState.score += 1;
 					}
 				}
-			}
-		});
+			})
+			.build()
+		);
 		
 		world.update(1);
 		

@@ -1,5 +1,6 @@
 import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
+import { createSystem } from './system-builder';
 
 interface TestComponents {
 	position: { x: number; y: number };
@@ -74,18 +75,21 @@ describe('SimpleECS', () => {
 		
 		const processedEntities: number[] = [];
 		
-		world.addSystem({
-			label: 'MovementSystem',
-			with: ['position', 'velocity'] as const,
-			without: ['health'] as const,
-			process(entities) {
+		world.addSystem(
+			createSystem<TestComponents>('MovementSystem')
+			.addQuery('entities', {
+				with: ['position', 'velocity'] as const,
+				without: ['health'] as const,
+			})
+			.setProcess(({entities}) => {
 				for (const entity of entities) {
 					processedEntities.push(entity.id);
 
 					// In a real system, we'd update position based on velocity and deltaTime
 				}
-			}
-		});
+			})
+			.build()
+		);
 		
 		world.update(1/60);
 		
@@ -99,10 +103,12 @@ describe('SimpleECS', () => {
 		world.addComponent(entity1, 'position', { x: 10, y: 20 });
 		world.addComponent(entity1, 'velocity', { x: 5, y: 10 });
 		
-		world.addSystem({
-			label: 'MovementSystem',
-			with: ['position', 'velocity'] as const,
-			process(entities, deltaTime, entityManager) {
+		world.addSystem(
+			createSystem<TestComponents>('MovementSystem')
+			.addQuery('entities', {
+				with: ['position', 'velocity'] as const,
+			})
+			.setProcess(({entities}, deltaTime, entityManager) => {
 				for (const entity of entities) {
 					const position = entity.components.position;
 					const velocity = entity.components.velocity;
@@ -113,8 +119,9 @@ describe('SimpleECS', () => {
 						y: position.y + velocity.y * deltaTime
 					});
 				}
-			}
-		});
+			})
+			.build()
+		);
 		
 		world.update(1.0);
 		
@@ -157,10 +164,12 @@ describe('SimpleECS', () => {
 		
 		// Add movement system that updates velocity based on state
 		// Adding this system first ensures it runs before the state system
-		world.addSystem({
-			label: 'MovementControlSystem',
-			with: ['state', 'velocity'] as const,
-			process(entities, deltaTime, entityManager) {
+		world.addSystem(
+			createSystem<TestComponents>('MovementControlSystem')
+			.addQuery('entities', {
+				with: ['state', 'velocity'] as const,
+			})
+			.setProcess(({entities}, deltaTime, entityManager) => {
 				for (const entity of entities) {
 					const state = entity.components.state;
 					
@@ -176,14 +185,17 @@ describe('SimpleECS', () => {
 						entityManager.addComponent(entity.id, 'velocity', { x: 0, y: 0 });
 					}
 				}
-			}
-		});
+			})
+			.build()
+		);
 		
 		// Add state transition system (runs after movement system)
-		world.addSystem({
-			label: 'StateSystem',
-			with: ['state', 'velocity'] as const,
-			process(entities, deltaTime, entityManager) {
+		world.addSystem(
+			createSystem<TestComponents>('StateSystem')
+			.addQuery('entities', {
+				with: ['state', 'velocity'] as const,
+			})
+			.setProcess(({entities}, deltaTime, entityManager) => {
 				for (const entity of entities) {
 					const state = entity.components.state;
 					const velocity = entity.components.velocity;
@@ -207,14 +219,17 @@ describe('SimpleECS', () => {
 						});
 					}
 				}
-			}
-		});
+			})
+			.build()
+		);
 		
 		// Add lifetime system that decrements lifetime and affects state
-		world.addSystem({
-			label: 'LifetimeSystem',
-			with: ['lifetime'] as const,
-			process(entities, deltaTime, entityManager) {
+		world.addSystem(
+			createSystem<TestComponents>('LifetimeSystem')
+			.addQuery('entities', {
+				with: ['lifetime'] as const,
+			})
+			.setProcess(({entities}, deltaTime, entityManager) => {
 				for (const entity of entities) {
 					const lifetime = entity.components.lifetime;
 					const newRemaining = lifetime.remaining - deltaTime;
@@ -235,8 +250,9 @@ describe('SimpleECS', () => {
 						}
 					}
 				}
-			}
-		});
+			})
+			.build()
+		);
 		
 		// Run a few update cycles with different delta times
 		
@@ -273,10 +289,12 @@ describe('SimpleECS', () => {
 		world.addComponent(entityId, 'health', { value: 100 });
 		
 		// Add a system that dynamically adds and removes components
-		world.addSystem({
-			label: 'DynamicComponentSystem',
-			with: ['position'] as const,
-			process(entities, deltaTime, entityManager) {
+		world.addSystem(
+			createSystem<TestComponents>('DynamicComponentSystem')
+			.addQuery('entities', {
+				with: ['position'] as const,
+			})
+			.setProcess(({entities}, deltaTime, entityManager) => {
 				for (const entity of entities) {
 					const health = entityManager.getComponent(entity.id, 'health');
 					
@@ -310,8 +328,9 @@ describe('SimpleECS', () => {
 						});
 					}
 				}
-			}
-		});
+			})
+			.build()
+		);
 		
 		// Run system once
 		world.update(1.0);

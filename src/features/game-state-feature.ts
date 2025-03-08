@@ -174,17 +174,31 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 		)
 		.addSystem(
 			createSystem<Components>('game-over-handler')
+				.addQuery('enemies', {
+					with: ['enemy']
+				})
+				.addQuery('players', {
+					with: [
+						'player',
+						'position',
+						'velocity',
+						'health',
+					],
+				})
 				.setEventHandlers({
 					gameOver: {
-						handler(data: undefined, entityManager: EntityManager<Components>, resourceManager: ResourceManager<Resources>, eventBus: EventBus<Events>) {
+						handler(queries, entityManager, resourceManager) {
 							console.log("Game Over! Resetting game...");
+							const {
+								enemies,
+								players,
+							} = queries;
 							
 							// Display game over message
 							const healthText = resourceManager.get('healthText');
 							healthText.text = "GAME OVER - Resetting...";
 							
 							// Remove all enemies
-							const enemies = entityManager.getEntitiesWithComponents(['enemy']);
 							for (const enemy of enemies) {
 								// Remove enemy sprite from the scene
 								if (enemy.components.sprite) {
@@ -200,39 +214,37 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 							const enemyState = resourceManager.get('enemyState');
 							enemyState.spawnTimer = 0;
 							
+							// TODO Move this to event handler
 							// Wait a brief moment before resetting the player
 							setTimeout(() => {
 								// Reset player position to the middle of the map
-								const players = entityManager.getEntitiesWithComponents(['player']);
-								if (players.length > 0) {
-									const player = players[0];
-									const mapSize = resourceManager.get('config').mapSize;
-									
-									// Make sure player has all required components
-									if (player && player.components.position && player.components.velocity && player.components.health) {
-										// Reset position to center of map
-										player.components.position.x = mapSize / 2;
-										player.components.position.y = mapSize / 2;
-										
-										// Reset velocity
-										player.components.velocity.x = 0;
-										player.components.velocity.y = 0;
-										
-										// Reset health
-										player.components.health.current = player.components.health.max;
-										
-										// Remove invincibility if present
-										if (player.components.invincible) {
-											entityManager.removeComponent(player.id, 'invincible');
-											if (player.components.sprite) {
-												player.components.sprite.alpha = 1.0;
-											}
-										}
-										
-										// Update health display
-										healthText.text = `Health: ${player.components.health.current}/${player.components.health.max}`;
+								const [player] = players;
+								if(!player) return;
+
+								const mapSize = resourceManager.get('config').mapSize;
+							
+								// Reset position to center of map
+								player.components.position.x = mapSize / 2;
+								player.components.position.y = mapSize / 2;
+								
+								// Reset velocity
+								player.components.velocity.x = 0;
+								player.components.velocity.y = 0;
+								
+								// Reset health
+								player.components.health.current = player.components.health.max;
+								
+								// Remove invincibility if present
+								if (player.components.invincible) {
+									entityManager.removeComponent(player.id, 'invincible');
+									if (player.components.sprite) {
+										player.components.sprite.alpha = 1.0;
 									}
 								}
+								
+								// Update health display
+								healthText.text = `Health: ${player.components.health.current}/${player.components.health.max}`;
+							
 							}, 2000); // 2 second delay before resetting
 						},
 					},
@@ -242,7 +254,7 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 		.addSystem(
 			createSystem<Components>('camera-follow')
 				.addQuery('player', {
-					with: ['position', 'player'] as const
+					with: ['position', 'player']
 				})
 				.setProcess((queries, deltaTime, entityManager, resourceManager) => {
 					if (!queries.player || queries.player.length === 0) return;
@@ -318,8 +330,8 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 		.addSystem(
 			createSystem<Components>('update-sprite-position')
 				.addQuery('sprites', {
-					with: ['position', 'sprite'] as const,
-					without: ['frozen'] as const
+					with: ['position', 'sprite'],
+					without: ['frozen']
 				})
 				.setProcess((queries, deltaTime, entityManager, resourceManager) => {
 					if (!queries.sprites || queries.sprites.length === 0) return;
