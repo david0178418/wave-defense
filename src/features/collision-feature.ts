@@ -1,10 +1,22 @@
-import SimpleECS, { Feature } from "../lib/simple-ecs";
-import type { Components, Resources, Events } from "../types";
-import { EntityType } from "./entity-type-feature";
+import { Bundle } from "../lib/simple-ecs";
+import type { JunkDrawerOfComponents } from "../types";
+import type { EnemyComponents } from "./enemy-feature";
+import { EntityType, type EntityTypeComponents } from "./entity-type-feature";
+import type { MovementComponents } from "./movement-feature";
 
 // Collision component interface
 export
-interface CollisionComponents {
+// Gross
+interface CollisionComponents extends
+	MovementComponents,
+	EntityTypeComponents,
+	JunkDrawerOfComponents,
+	EnemyComponents,
+	JunkDrawerOfComponents {
+}
+
+export
+interface JunkDrawerOfCollisionComponents {
 	// Hitbox for collision detection
 	hitbox: {
 		width: number;
@@ -35,8 +47,8 @@ interface CollisionEvents {
 }
 
 export default
-function collisionFeature(game: SimpleECS<Components, Events, Resources>) {
-	const feature = new Feature<Components, Events, Resources>(game);
+function collisionFeature() {
+	const feature = new Bundle<CollisionComponents, CollisionEvents>();
 	
 	return feature
 		// Detect and process collisions between entities

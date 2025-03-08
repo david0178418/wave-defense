@@ -1,4 +1,4 @@
-import SimpleECS, { Feature } from "../lib/simple-ecs";
+import { createBundle } from "../lib/simple-ecs";
 
 export
 interface MovementComponents {
@@ -12,12 +12,14 @@ interface MovementComponents {
 }
 
 export default
-function movementFeature(game: SimpleECS<any, any, any>) {
-	const feature = new Feature<MovementComponents>(game);
-	
-	return feature
+function movementFeature() {
+	// Create a bundle with the movement functionality
+	const bundle = createBundle<MovementComponents>();
+
+	return bundle
 		.addSystem(
-			feature.createSystem('movement-system')
+			bundle
+				.createSystem('movement-system')
 				.addQuery('positionEntities', {
 					with: ['position', 'velocity'],
 					without: ['frozen']

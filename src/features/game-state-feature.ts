@@ -1,24 +1,32 @@
 import { Application, Sprite, Texture, Container, Graphics, Text } from "pixi.js";
-import SimpleECS, { Feature } from "../lib/simple-ecs";
-import type { Components, Resources, Events } from "../types";
-import type EntityManager from "../lib/simple-ecs/entity-manager";
-import type ResourceManager from "../lib/simple-ecs/resource-manager";
-import type EventBus from "../lib/simple-ecs/event-bus";
+import { Bundle } from "../lib/simple-ecs";
+import type { JunkDrawerOfComponents, JunkDrawerOfEvents } from "../types";
 import { EntityType } from "./entity-type-feature";
-import { DamageType } from "./combat-feature";
+import { DamageType, type CombatComponents } from "./combat-feature";
+import type { CollisionComponents, JunkDrawerOfCollisionComponents } from "./collision-feature";
 
 export
-interface GameStateComponents {
+interface GameStateComponents extends
+	CollisionComponents,
+	CombatComponents,
+	JunkDrawerOfCollisionComponents,
+	JunkDrawerOfComponents {
 	// No specific components, primarily uses resources and events
 }
 
+export
+interface GameStateEvents extends
+	JunkDrawerOfEvents {
+}
+
 export default
-function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
-	const feature = new Feature<Components, Events, Resources>(game);
+function gameStateFeature(game: any) {
+	const bundle = new Bundle<GameStateComponents, GameStateEvents>();
 	
-	return feature
+	return bundle
 		.addSystem(
-			feature.createSystem('initialize-game')
+			bundle
+				.createSystem('initialize-game')
 				.setEventHandlers({
 					initializeGame: {
 						async handler(data, entityManager, resourceManager, eventBus) {
@@ -68,10 +76,11 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 				})
 		)
 		.addSystem(
-			feature.createSystem('initialize-map')
+			bundle
+				.createSystem('initialize-map')
 				.setEventHandlers({
 					initializeMap: {
-						handler(data: undefined, entityManager: EntityManager<Components>, resourceManager: ResourceManager<Resources>, eventBus: EventBus<Events>) {
+						handler(data, entityManager, resourceManager, eventBus) {
 							const worldContainer = resourceManager.get('worldContainer');
 							const mapSize = 2000;
 							const map = new Container();
@@ -105,10 +114,11 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 				})
 		)
 		.addSystem(
-			feature.createSystem('initialize-player')
+			bundle
+				.createSystem('initialize-player')
 				.setEventHandlers({
 					initializePlayer: {
-						handler(data: undefined, entityManager: EntityManager<Components>, resourceManager: ResourceManager<Resources>, eventBus: EventBus<Events>) {
+						handler(data, entityManager, resourceManager, eventBus) {
 							const worldContainer = resourceManager.get('worldContainer');
 							const mapSize = resourceManager.get('config').mapSize;
 							
@@ -172,7 +182,7 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 				})
 		)
 		.addSystem(
-			feature.createSystem('game-over-handler')
+			bundle.createSystem('game-over-handler')
 				.addQuery('enemies', {
 					with: ['enemy']
 				})
@@ -186,7 +196,7 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 				})
 				.setEventHandlers({
 					gameOver: {
-						handler(data: undefined, entityManager: EntityManager<Components>, resourceManager: ResourceManager<Resources>, eventBus: EventBus<Events>) {
+						handler(data, entityManager, resourceManager, eventBus) {
 							console.log("Game Over! Resetting game...");
 							// Get enemies and players from queries
 							const enemies = entityManager.getEntitiesWithComponents(['enemy']);
@@ -249,7 +259,7 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 				})
 		)
 		.addSystem(
-			feature.createSystem('camera-follow')
+			bundle.createSystem('camera-follow')
 				.addQuery('player', {
 					with: ['position', 'player']
 				})
@@ -324,7 +334,7 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 				})
 		)
 		.addSystem(
-			feature.createSystem('update-sprite-position')
+			bundle.createSystem('update-sprite-position')
 				.addQuery('sprites', {
 					with: ['position', 'sprite'],
 					without: ['frozen']

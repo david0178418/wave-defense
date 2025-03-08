@@ -1,16 +1,20 @@
 import { Sprite, Texture } from "pixi.js";
-import SimpleECS, { Feature } from "../lib/simple-ecs";
-import type { Components, Resources, Events } from "../types";
-import { EntityType } from "./entity-type-feature";
-import { DamageType } from "./combat-feature";
+import { Bundle  } from "../lib/simple-ecs";
+import { EntityType, type EntityTypeComponents } from "./entity-type-feature";
+import { DamageType, type CombatComponents } from "./combat-feature";
+import type { JunkDrawerOfResources } from "../types";
+import type { JunkDrawerOfCollisionComponents } from "./collision-feature";
 
 export
-interface EnemyComponents {
+type EnemyComponents = EntityTypeComponents & CombatComponents & JunkDrawerOfCollisionComponents &{
 	enemy: true;
 }
 
 export
-interface EnemyResources {
+interface EnemyEvents {}
+
+export
+interface EnemyResources extends JunkDrawerOfResources {
 	enemyState: {
 		spawnTimer: number;
 		maxEnemies: number;
@@ -55,12 +59,13 @@ const ENEMY_STATS: Record<EntityType, EnemyStats> = {
 };
 
 export default
-function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
-	const feature = new Feature<Components, Events, Resources>(game);
+function enemyFeature() {
+	const bundle = new Bundle<EnemyComponents, EnemyEvents, EnemyResources>();
 	
-	return feature
+	return bundle
 		.addSystem(
-			feature.createSystem('enemy-spawning')
+			bundle
+				.createSystem('enemy-spawning')
 				.addQuery('basicEnemies', {
 					with: ['enemy', 'entityType'],
 					without: []
@@ -215,7 +220,7 @@ function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
 				})
 		)
 		.addSystem(
-			feature.createSystem('enemy-movement')
+			bundle.createSystem('enemy-movement')
 				.addQuery('enemies', {
 					with: ['position', 'velocity', 'enemy']
 				})

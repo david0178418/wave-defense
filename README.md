@@ -277,4 +277,92 @@ const props = game.entityManager.getEntitiesWithComponents(
 );
 ```
 
+### Using Bundles for Modular Organization
+
+Bundles provide a way to organize related components, systems, and resources into modular, composable units. They help maintain type safety while allowing you to break up your game logic into reusable pieces.
+
+#### Creating a Bundle
+
+```typescript
+import { createBundle } from "./simple-ecs";
+
+// Define types for this bundle
+interface PhysicsComponents {
+  position: { x: number; y: number };
+  velocity: { x: number; y: number };
+}
+
+interface PhysicsResources {
+  gravity: { value: number };
+}
+
+// Create a bundle with its own type definitions
+const physicsBundle = createBundle<PhysicsComponents, {}, PhysicsResources>()
+  .addSystem(
+    // Systems maintain their own type safety within the bundle
+    createSystem('movement')
+      .addEntityQuery('moving', {
+        with: ['position', 'velocity']
+      })
+      .setProcess((queries, deltaTime) => {
+        // Process movement...
+      })
+  )
+  .addResource('gravity', { value: 9.8 });
+```
+
+#### Installing Bundles into a World
+
+```typescript
+// Create the game world
+const game = new SimpleECS<GameComponents, GameEvents, GameResources>();
+
+// Install the bundle
+game.install(physicsBundle);
+
+// Or use method chaining
+game
+  .install(physicsBundle)
+  .install(renderBundle)
+  .install(aiBundle);
+```
+
+#### Combining Bundles
+
+You can also combine multiple bundles before installing them:
+
+```typescript
+import { combineBundle } from "./simple-ecs";
+
+// Define player-specific types
+interface PlayerComponents {
+  player: { id: string };
+  health: { value: number };
+}
+
+interface PlayerResources {
+  controls: { up: boolean; down: boolean; left: boolean; right: boolean };
+}
+
+// Create a player bundle
+const playerBundle = createBundle<PlayerComponents, {}, PlayerResources>()
+  .addSystem(/* player systems */)
+  .addResource('controls', { up: false, down: false, left: false, right: false });
+
+// Combine the bundles
+// TypeScript will properly merge the component and resource types
+const gameplayBundle = combineBundle(physicsBundle, playerBundle);
+
+// Install the combined bundle
+game.install(gameplayBundle);
+```
+
+#### Benefits of Bundles
+
+1. **Modularity**: Organize related functionality into self-contained units
+2. **Type Safety**: Each bundle maintains full type information for its components, resources, and systems
+3. **Composition**: Combine bundles to build more complex functionality
+4. **Reusability**: Create libraries of reusable game systems with proper typing
+5. **Clean Code**: Keep your ECS organization tidy with logical groupings
+
 This project was created using `bun init` in bun v1.2.4. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.

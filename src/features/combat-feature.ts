@@ -1,7 +1,8 @@
-import SimpleECS, { Feature } from "../lib/simple-ecs";
-import type { Components, Resources, Events } from "../types";
-import { EntityType } from "./entity-type-feature";
-
+import { Bundle } from "../lib/simple-ecs";
+import type { JunkDrawerOfComponents, JunkDrawerOfEvents } from "../types";
+import type { CollisionEvents } from "./collision-feature";
+import { EntityType, type EntityTypeComponents } from "./entity-type-feature";
+import type { MovementComponents } from "./movement-feature";
 // Define damage types for different attack sources
 export
 enum DamageType {
@@ -11,9 +12,9 @@ enum DamageType {
 	// Add more as needed
 }
 
-// Combat-related components
 export
-interface CombatComponents {
+// gross
+interface CombatComponents extends MovementComponents, JunkDrawerOfComponents, EntityTypeComponents {
 	// Health component for any entity that can take damage
 	health: { 
 		current: number; 
@@ -51,7 +52,7 @@ interface CombatComponents {
 
 // Event type for damage events
 export
-interface CombatEvents {
+interface CombatEvents extends CollisionEvents, JunkDrawerOfEvents {
 	// Event fired when an entity takes damage
 	entityDamaged: {
 		targetId: number;
@@ -68,13 +69,14 @@ interface CombatEvents {
 }
 
 export default
-function combatFeature(game: SimpleECS<Components, Events, Resources>) {
-	const feature = new Feature<Components, Events, Resources>(game);
+function combatFeature() {
+	const bundle = new Bundle<CombatComponents, CombatEvents>();
 	
-	return feature
+	return bundle
 		// Process damage application
 		.addSystem(
-			feature.createSystem('damage-dealing')
+			bundle
+				.createSystem('damage-dealing')
 				.addQuery('damageDealers', {
 					with: ['position', 'sprite', 'damageDealer']
 				})
@@ -86,7 +88,7 @@ function combatFeature(game: SimpleECS<Components, Events, Resources>) {
 		)
 		// Handles damage effects like invincibility and visual feedback
 		.addSystem(
-			feature.createSystem('damage-effects')
+			bundle.createSystem('damage-effects')
 				.addQuery('invincibleEntities', {
 					with: ['sprite', 'invincible']
 				})
@@ -125,7 +127,7 @@ function combatFeature(game: SimpleECS<Components, Events, Resources>) {
 		
 		// Event handler for damage events
 		.addSystem(
-			feature.createSystem('damage-event-handler')
+			bundle.createSystem('damage-event-handler')
 				.setEventHandlers({
 					entityDamaged: {
 						handler(data, entityManager, resourceManager, eventBus) {

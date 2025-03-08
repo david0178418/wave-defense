@@ -3,10 +3,11 @@ import EventBus from "./event-bus";
 import ResourceManager from "./resource-manager";
 import { createSystem, SystemBuilder } from "./system-builder";
 import type { System } from "./types";
+import type Bundle from "./bundle";
 
 export default
 class SimpleECS<
-	ComponentTypes,
+	ComponentTypes extends Record<string, any> = Record<string, any>,
 	EventTypes extends Record<string, any> = Record<string, any>,
 	ResourceTypes extends Record<string, any> = Record<string, any>,
 > {
@@ -19,6 +20,20 @@ class SimpleECS<
 		this._entityManager = new EntityManager<ComponentTypes>();
 		this._eventBus = new EventBus<EventTypes>();
 		this._resourceManager = new ResourceManager<ResourceTypes>();
+	}
+
+	/**
+	 * Install a bundle into this ECS instance
+	 */
+	install<
+		B extends Record<string, any> = ComponentTypes,
+		E extends Record<string, any> = EventTypes,
+		R extends Record<string, any> = ResourceTypes
+	>(bundle: Bundle<B, E, R>) {
+		// Use the bundle's installInto method to install itself into this ECS
+		// We need to cast the types here since TypeScript can't fully track
+		// that B, E, and R are compatible with ComponentTypes, EventTypes, and ResourceTypes
+		return bundle.installInto(this as any as SimpleECS<B, E, R>);
 	}
 
 	addSystem(systemBuilder: SystemBuilder<ComponentTypes, EventTypes, ResourceTypes, any>) {

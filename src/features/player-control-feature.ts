@@ -1,10 +1,13 @@
-import SimpleECS, { Feature } from "../lib/simple-ecs";
+import { createBundle } from "../lib/simple-ecs";
 import type { MovementComponents } from "./movement-feature";
 
 export
 interface PlayerControlComponents extends MovementComponents {
 	player: true;
 }
+
+export
+interface PlayerControlEvents {}
 
 export
 interface PlayerControlResources {
@@ -20,13 +23,15 @@ interface ActiveControlMap {
 }
 
 export default
-function playerControlFeature(game: SimpleECS<any, any, any>) {
-	const feature = new Feature<PlayerControlComponents, Record<string, any>, PlayerControlResources>(game);
+function playerControlFeature() {
+	// Create a bundle with the player control functionality
+	const bundle = createBundle<PlayerControlComponents, PlayerControlEvents, PlayerControlResources>()
 	
-	return feature
-		.addResource('activeKeyMap', keyMap())
+	return bundle
+	.addResource('activeKeyMap', keyMap())
 		.addSystem(
-			feature.createSystem('player-control')
+			bundle
+				.createSystem('player-control')
 				.addQuery('players', {
 					with: ['acceleration', 'speed', 'player']
 				})

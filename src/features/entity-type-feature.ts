@@ -1,6 +1,4 @@
-import SimpleECS, { Feature } from "../lib/simple-ecs";
-import type { Components, Resources, Events } from "../types";
-
+import { createBundle } from "../lib/simple-ecs";
 // Define entity types as an enum for better type safety and extensibility
 export
 enum EntityType {
@@ -21,9 +19,9 @@ interface EntityTypeComponents {
 	};
 }
 
+// TODO Probably dead or needs to be moved...?
 export default
-function entityTypeFeature(game: SimpleECS<Components, Events, Resources>) {
-	const feature = new Feature<Components, Events, Resources>(game);
-	
-	return feature;
+function entityTypeFeature() {
+	// Create a bundle for entity type functionality
+	return createBundle<EntityTypeComponents>();
 } 

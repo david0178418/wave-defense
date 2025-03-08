@@ -13,7 +13,12 @@ interface Components extends
 	EnemyComponents,
 	EntityTypeComponents,
 	CombatComponents,
-	CollisionComponents {
+	CollisionComponents,
+	JunkDrawerOfComponents {
+}
+
+export
+interface JunkDrawerOfComponents {
 	player: true;
 	sprite: Sprite;
 }
@@ -21,7 +26,12 @@ interface Components extends
 export
 interface Events extends 
 	CombatEvents,
-	CollisionEvents {
+	CollisionEvents,
+	JunkDrawerOfEvents {
+}
+
+export
+interface JunkDrawerOfEvents {
 	initializeGame: undefined;
 	initializeMap: undefined;
 	initializePlayer: undefined;
@@ -31,7 +41,12 @@ interface Events extends
 export
 interface Resources extends 
 	PlayerControlResources,
-	EnemyResources {
+	EnemyResources,
+	JunkDrawerOfResources {
+}
+
+export
+interface JunkDrawerOfResources {
 	pixi: Application;
 	worldContainer: Container;
 	uiContainer: Container;
@@ -41,12 +56,4 @@ interface Resources extends
 		deadzonePercentWidth: number;
 		deadzonePercentHeight: number;
 	};
-}
-
-export
-interface ActiveControlMap {
-	up: boolean;
-	down: boolean;
-	left: boolean;
-	right: boolean;
 }

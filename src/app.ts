@@ -23,14 +23,15 @@ game.addResource('config', {
 
 // Install features
 // Note the order is important - core systems like entityType should be installed first
-entityTypeFeature(game);
-combatFeature(game);
-collisionFeature(game);
-movementFeature(game);
-playerControlFeature(game);
-enemyFeature(game);
-healthFeature(game);
-gameStateFeature(game);
+game
+	.install(entityTypeFeature())
+	.install(combatFeature())
+	.install(collisionFeature())
+	.install(movementFeature())
+	.install(playerControlFeature())
+	.install(enemyFeature())
+	.install(healthFeature())
+	.install(gameStateFeature(game));
 
 // Start the game
 game.eventBus.publish('initializeGame');

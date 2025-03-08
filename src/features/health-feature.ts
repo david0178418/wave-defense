@@ -1,19 +1,29 @@
-import SimpleECS, { Feature } from "../lib/simple-ecs";
-import type { Components, Resources, Events } from "../types";
+import { Bundle } from "../lib/simple-ecs";
+import type { JunkDrawerOfComponents } from "../types";
+import type { CombatComponents } from "./combat-feature";
+import type { EnemyComponents } from "./enemy-feature";
+import type { EntityTypeComponents } from "./entity-type-feature";
+import type { MovementComponents } from "./movement-feature";
 
 export
-interface HealthComponents {
+interface HealthComponents extends
+	MovementComponents,
+	JunkDrawerOfComponents,
+	EntityTypeComponents,
+	CombatComponents,
+	EnemyComponents {
 	health: { current: number; max: number };
 	invincible: { timer: number; duration: number };
 }
 
 export default
-function healthFeature(game: SimpleECS<Components, Events, Resources>) {
-	const feature = new Feature<Components, Events, Resources>(game);
+function healthFeature() {
+	const bundle = new Bundle<HealthComponents>();
 	
-	return feature
+	return bundle
 		.addSystem(
-			feature.createSystem('player-enemy-collision')
+			bundle
+				.createSystem('player-enemy-collision')
 				.addQuery('players', {
 					with: ['player', 'position', 'sprite', 'health']
 				})
@@ -92,7 +102,7 @@ function healthFeature(game: SimpleECS<Components, Events, Resources>) {
 				})
 		)
 		.addSystem(
-			feature.createSystem('update-health-display')
+			bundle.createSystem('update-health-display')
 				.addQuery('player', {
 					with: ['player', 'health']
 				})
@@ -112,7 +122,7 @@ function healthFeature(game: SimpleECS<Components, Events, Resources>) {
 				})
 		)
 		.addSystem(
-			feature.createSystem('map-collision')
+			bundle.createSystem('map-collision')
 				.addQuery('entities', {
 					with: ['position', 'velocity', 'sprite']
 				})
