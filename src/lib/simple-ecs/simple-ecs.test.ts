@@ -1,6 +1,5 @@
 import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
-import { createSystem } from './system-builder';
 
 interface TestComponents {
 	position: { x: number; y: number };
@@ -64,7 +63,7 @@ describe('SimpleECS', () => {
 		const processedEntities: number[] = [];
 		
 		world.addSystem(
-			createSystem<TestComponents>('MovementSystem')
+			world.createSystem('MovementSystem')
 			.addQuery('entities', {
 				with: ['position', 'velocity'],
 				without: ['health'],
@@ -113,7 +112,7 @@ describe('SimpleECS', () => {
 		let processRan = false;
 		
 		world.addSystem(
-			createSystem<TestComponents>('MovementSystem')
+			world.createSystem('MovementSystem')
 			.addQuery('entities', {
 				with: ['position', 'velocity'],
 			})
@@ -145,7 +144,7 @@ describe('SimpleECS', () => {
 		
 		// Create a system with lifecycle hooks
 		world.addSystem(
-			createSystem<TestComponents>('MovementControlSystem')
+			world.createSystem('MovementControlSystem')
 			.setOnAttach(() => {
 				attachCalled = true;
 			})
@@ -178,7 +177,7 @@ describe('SimpleECS', () => {
 		
 		// Create a system that updates state
 		world.addSystem(
-			createSystem<TestComponents>('StateSystem')
+			world.createSystem('StateSystem')
 			.addQuery('entities', {
 				with: ['state'],
 			})
@@ -215,7 +214,7 @@ describe('SimpleECS', () => {
 		
 		// Create a lifetime system
 		world.addSystem(
-			createSystem<TestComponents>('LifetimeSystem')
+			world.createSystem('LifetimeSystem')
 			.addQuery('entities', {
 				with: ['lifetime'],
 			})
@@ -251,7 +250,7 @@ describe('SimpleECS', () => {
 		
 		// Create a system that adds and removes components
 		world.addSystem(
-			createSystem<TestComponents>('DynamicComponentSystem')
+			world.createSystem('DynamicComponentSystem')
 			.addQuery('withPosition', {
 				with: ['position'],
 			})

@@ -1,6 +1,5 @@
 import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
-import { createSystem } from './system-builder';
 
 interface TestComponents {
 	position: { x: number; y: number };
@@ -123,7 +122,7 @@ describe('EventSystem', () => {
 		const receivedEvents: any[] = [];
 		
 		world.addSystem(
-			createSystem<TestComponents>('HealthEventSystem')
+			world.createSystem('HealthEventSystem')
 			.setEventHandlers({
 				healthChanged: {
 					handler: (data, eventBus, entityManager) => {
@@ -172,7 +171,7 @@ describe('EventSystem', () => {
 		
 		// Add system with an event handler that will receive the parameters
 		world.addSystem(
-			createSystem<TestComponents>('ParameterTestSystem')
+			world.createSystem('ParameterTestSystem')
 			.setEventHandlers({
 				healthChanged: {
 					handler(
@@ -248,7 +247,7 @@ describe('EventSystem', () => {
 		
 		// Add a system with lifecycle hooks and event handlers
 		world.addSystem(
-			createSystem<TestComponents>('LifecycleSystem')
+			world.createSystem('LifecycleSystem')
 			.setOnAttach((entityManager, resourceManager, innerEventBus) => {
 				attachCalled = true;
 				
@@ -304,7 +303,7 @@ describe('EventSystem', () => {
 		};
 		
 		world.addSystem(
-			createSystem<TestComponents>('EventDrivenDamageSystem')
+			world.createSystem('EventDrivenDamageSystem')
 			.setEventHandlers({
 				collision: {
 					handler(
@@ -343,7 +342,7 @@ describe('EventSystem', () => {
 		
 		// Create a movement system that reacts to health changes
 		world.addSystem(
-			createSystem<TestComponents>('HealthReactiveMovementSystem')
+			world.createSystem('HealthReactiveMovementSystem')
 			.setEventHandlers({
 				healthChanged: {
 					handler(

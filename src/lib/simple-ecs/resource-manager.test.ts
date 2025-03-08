@@ -1,6 +1,5 @@
 import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
-import { createSystem } from './system-builder';
 
 interface TestComponents {
 	position: { x: number; y: number };
@@ -88,25 +87,25 @@ describe('ResourceManager', () => {
 		const accessedResources: Record<string, any> = {};
 		
 		world.addSystem(
-			createSystem<TestComponents>('resource-system')
-			.addQuery('entities', {
-				with: ['position'],
-			})
-			.setProcess((queries, deltaTime, entityManager, resourceManager, eventBus) => {
-				processedEntities.push(...queries.entities);
-				
-				accessedResources['config'] = resourceManager.get('config');
-				accessedResources['gameState'] = resourceManager.get('gameState');
-				
-				if (accessedResources['config'].debug) {
-					for (const entity of queries.entities) {
-						entity.components.position.x += 10 * accessedResources['config'].timeStep;
-						
-						const gameState = resourceManager.get('gameState');
-						gameState.score += 1;
+			world.createSystem('resource-system')
+				.addQuery('entities', {
+					with: ['position'],
+				})
+				.setProcess((queries, deltaTime, entityManager, resourceManager, eventBus) => {
+					processedEntities.push(...queries.entities);
+					
+					accessedResources['config'] = resourceManager.get('config');
+					accessedResources['gameState'] = resourceManager.get('gameState');
+					
+					if (accessedResources['config'].debug) {
+						for (const entity of queries.entities) {
+							entity.components.position.x += 10 * accessedResources['config'].timeStep;
+							
+							const gameState = resourceManager.get('gameState');
+							gameState.score += 1;
+						}
 					}
-				}
-			})
+				})
 		);
 		
 		world.update(1);
@@ -134,7 +133,7 @@ describe('ResourceManager', () => {
 		
 		// Add a system that uses the logger
 		world.addSystem(
-			createSystem<TestComponents>('logger-system')
+			world.createSystem('logger-system')
 			.setProcess((queries, deltaTime, entityManager, resourceManager) => {
 				const logger = resourceManager.get('logger');
 				logger.log('System executed');
@@ -154,7 +153,7 @@ describe('ResourceManager', () => {
 		
 		// Add a system with an event handler that uses resources
 		world.addSystem(
-			createSystem<TestComponents>('event-resource-system')
+			world.createSystem('event-resource-system')
 			.setEventHandlers({
 				collision: {
 					handler(

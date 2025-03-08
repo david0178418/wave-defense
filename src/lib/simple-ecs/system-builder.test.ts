@@ -1,6 +1,5 @@
 import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
-import { createSystem } from './system-builder';
 
 // Define some test component types for the ECS
 interface TestComponents {
@@ -28,7 +27,7 @@ describe('SystemBuilder', () => {
 		
 		const processedEntities: number[] = [];
 		
-		const system = createSystem<TestComponents>('movement')
+		const system = world.createSystem('movement')
 			.addQuery('entities', {
 				with: ['position', 'velocity'],
 				without: [],
@@ -67,7 +66,7 @@ describe('SystemBuilder', () => {
 		const processedMovingEntities: number[] = [];
 		const processedCollidingEntities: number[] = [];
 		
-		const system = createSystem<TestComponents>('multiQuery')
+		const system = world.createSystem('multiQuery')
 			.addQuery('movingEntities', {
 				with: ['position', 'velocity'],
 			})
@@ -97,7 +96,7 @@ describe('SystemBuilder', () => {
 		let onAttachCalled = false;
 		let onDetachCalled = false;
 		
-		const system = createSystem<TestComponents>('lifecycle')
+		const system = world.createSystem('lifecycle')
 			.setOnAttach(() => {
 				onAttachCalled = true;
 			})
@@ -131,7 +130,7 @@ describe('SystemBuilder', () => {
 		let sumX = 0;
 		let sumY = 0;
 		
-		const system = createSystem<TestComponents>('staticObjects')
+		const system = world.createSystem('staticObjects')
 			.addQuery('objects', {
 				with: ['position', 'velocity'],
 				without: [],
