@@ -1,4 +1,4 @@
-import SimpleECS, { Feature, createSystem } from "../lib/simple-ecs";
+import SimpleECS, { Feature } from "../lib/simple-ecs";
 import type { MovementComponents } from "./movement-feature";
 
 export
@@ -21,10 +21,12 @@ interface ActiveControlMap {
 
 export default
 function playerControlFeature(game: SimpleECS<any, any, any>) {
-	return new Feature<PlayerControlComponents, Record<string, any>, PlayerControlResources>(game)
+	const feature = new Feature<PlayerControlComponents, Record<string, any>, PlayerControlResources>(game);
+	
+	return feature
 		.addResource('activeKeyMap', keyMap())
 		.addSystem(
-			createSystem<PlayerControlComponents>('player-control')
+			feature.createSystem('player-control')
 				.addQuery('players', {
 					with: ['acceleration', 'speed', 'player']
 				})
@@ -53,9 +55,7 @@ function playerControlFeature(game: SimpleECS<any, any, any>) {
 						player.components.acceleration.x = 0;
 					}
 				})
-				.build()
-		)
-		.install();
+		);
 }
 
 function keyMap(): ActiveControlMap {

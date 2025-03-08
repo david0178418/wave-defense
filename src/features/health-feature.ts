@@ -1,4 +1,4 @@
-import SimpleECS, { Feature, createSystem } from "../lib/simple-ecs";
+import SimpleECS, { Feature } from "../lib/simple-ecs";
 import type { Components, Resources, Events } from "../types";
 
 export
@@ -9,9 +9,11 @@ interface HealthComponents {
 
 export default
 function healthFeature(game: SimpleECS<Components, Events, Resources>) {
-	return new Feature<Components, Events, Resources>(game)
+	const feature = new Feature<Components, Events, Resources>(game);
+	
+	return feature
 		.addSystem(
-			createSystem<Components>('player-enemy-collision')
+			feature.createSystem('player-enemy-collision')
 				.addQuery('players', {
 					with: ['player', 'position', 'sprite', 'health']
 				})
@@ -88,10 +90,9 @@ function healthFeature(game: SimpleECS<Components, Events, Resources>) {
 						eventBus.publish('gameOver');
 					}
 				})
-				.build()
 		)
 		.addSystem(
-			createSystem<Components>('update-health-display')
+			feature.createSystem('update-health-display')
 				.addQuery('player', {
 					with: ['player', 'health']
 				})
@@ -109,10 +110,9 @@ function healthFeature(game: SimpleECS<Components, Events, Resources>) {
 					const health = player.components.health;
 					healthText.text = `Health: ${health.current}/${health.max}`;
 				})
-				.build()
 		)
 		.addSystem(
-			createSystem<Components>('map-collision')
+			feature.createSystem('map-collision')
 				.addQuery('entities', {
 					with: ['position', 'velocity', 'sprite']
 				})
@@ -153,7 +153,5 @@ function healthFeature(game: SimpleECS<Components, Events, Resources>) {
 						}
 					}
 				})
-				.build()
-		)
-		.install();
+		);
 } 

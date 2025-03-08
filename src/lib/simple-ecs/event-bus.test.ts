@@ -1,5 +1,6 @@
 import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
+import { createSystem } from './system-builder';
 
 interface TestComponents {
 	position: { x: number; y: number };
@@ -20,9 +21,9 @@ describe('EventSystem', () => {
 	test('should allow subscribing to and publishing events', () => {
 		const world = new SimpleECS<TestComponents, TestEvents>();
 		const eventBus = world.eventBus;
-		const entityId = world.createEntity();
+		const entity = world.createEntity();
 		
-		world.addComponent(entityId, 'position', { x: 0, y: 0 });
+		world.addComponent(entity.id, 'position', { x: 0, y: 0 });
 		
 		let eventReceived = false;
 		let receivedData: TestEvents['entityCreated'] = { entityId: 0 };
@@ -115,16 +116,15 @@ describe('EventSystem', () => {
 	
 	test('should auto-register event handlers from systems', () => {
 		const world = new SimpleECS<TestComponents, TestEvents>();
-		const entityId = world.createEntity();
+		const entity = world.createEntity();
 		
-		world.addComponent(entityId, 'health', { value: 100 });
+		world.addComponent(entity.id, 'health', { value: 100 });
 		
 		const receivedEvents: any[] = [];
 		
-		world.addSystem({
-			label: 'HealthEventSystem',
-			with: ['health'],
-			eventHandlers: {
+		world.addSystem(
+			createSystem<TestComponents>('HealthEventSystem')
+			.setEventHandlers({
 				healthChanged: {
 					handler: (data, eventBus, entityManager) => {
 						receivedEvents.push(data);
@@ -135,45 +135,45 @@ describe('EventSystem', () => {
 						receivedEvents.push(data);
 					}
 				}
-			}
-		});
+			})
+		);
 		
 		world.eventBus.publish('healthChanged', { 
-			entityId, 
+			entityId: entity.id, 
 			oldValue: 100, 
 			newValue: 80 
 		});
 		
 		world.eventBus.publish('entityDestroyed', { 
-			entityId 
+			entityId: entity.id 
 		});
 		
 		expect(receivedEvents.length).toBe(2);
 		expect(receivedEvents[0]).toEqual({ 
-			entityId, 
+			entityId: entity.id, 
 			oldValue: 100, 
 			newValue: 80 
 		});
 		expect(receivedEvents[1]).toEqual({ 
-			entityId 
+			entityId: entity.id 
 		});
 	});
 	
 	test('should provide eventBus and entityManager parameters to event handlers', () => {
 		const world = new SimpleECS<TestComponents, TestEvents>();
 		const eventBus = world.eventBus;
-		const entityId = world.createEntity();
+		const entity = world.createEntity();
 		
-		world.addComponent(entityId, 'health', { value: 100 });
+		world.addComponent(entity.id, 'health', { value: 100 });
 		
 		let receivedEventBus: any = null;
 		let receivedEntityManager: any = null;
 		let receivedData: any = null;
 		
 		// Add system with an event handler that will receive the parameters
-		world.addSystem({
-			label: 'ParameterTestSystem',
-			eventHandlers: {
+		world.addSystem(
+			createSystem<TestComponents>('ParameterTestSystem')
+			.setEventHandlers({
 				healthChanged: {
 					handler(
 						data,
@@ -200,8 +200,8 @@ describe('EventSystem', () => {
 						});
 					}
 				}
-			}
-		});
+			})
+		);
 		
 		let gameStateChanged = false;
 		let gameStateData: any = null;
@@ -212,20 +212,20 @@ describe('EventSystem', () => {
 		});
 		
 		eventBus.publish('healthChanged', {
-			entityId,
+			entityId: entity.id,
 			oldValue: 100,
 			newValue: 40
 		});
 		
 		expect(receivedData).toEqual({
-			entityId,
+			entityId: entity.id,
 			oldValue: 100,
 			newValue: 40
 		});
 		expect(receivedEventBus).toBeTruthy();
 		expect(receivedEntityManager).toBeTruthy();
 		
-		const updatedHealth = world.getComponent(entityId, 'health');
+		const updatedHealth = world.getComponent(entity.id, 'health');
 
 		expect(updatedHealth?.value).toBe(40);
 		expect(gameStateChanged).toBe(true);
@@ -247,13 +247,9 @@ describe('EventSystem', () => {
 		const subscriptions: (() => void)[] = [];
 		
 		// Add a system with lifecycle hooks and event handlers
-		world.addSystem({
-			label: 'LifecycleSystem',
-			onAttach(
-				entityManager,
-				resourceManager,
-				innerEventBus,
-			) {
+		world.addSystem(
+			createSystem<TestComponents>('LifecycleSystem')
+			.setOnAttach((entityManager, resourceManager, innerEventBus) => {
 				attachCalled = true;
 				
 				expect(innerEventBus).toBe(eventBus);
@@ -263,20 +259,15 @@ describe('EventSystem', () => {
 						eventReceived = true;
 					})
 				);
-			},
-			onDetach(
-				entityManager,
-				resourceManager,
-				innerEventBus,
-			) {
+			})
+			.setOnDetach((entityManager, resourceManager, innerEventBus) => {
 				detachCalled = true;
 				
 				expect(innerEventBus).toBe(eventBus);
 				
 				subscriptions.forEach(unsub => unsub());
-			},
-			// No event handlers here - we're manually subscribing in onAttach
-		});
+			})
+		);
 		
 		expect(attachCalled).toBe(true);
 		
@@ -297,24 +288,24 @@ describe('EventSystem', () => {
 	test('should integrate event system with ECS for event-driven behavior', () => {
 		const world = new SimpleECS<TestComponents, TestEvents>();
 		const eventBus = world.eventBus;
-		const entityId = world.createEntity();
+		const entity = world.createEntity();
 		
-		world.addComponent(entityId, 'health', { value: 100 });
-		world.addComponent(entityId, 'position', { x: 0, y: 0 });
+		world.addComponent(entity.id, 'health', { value: 100 });
+		world.addComponent(entity.id, 'position', { x: 0, y: 0 });
 		
-		const entity2Id = world.createEntity();
+		const entity2 = world.createEntity();
 		
-		world.addComponent(entity2Id, 'health', { value: 100 });
-		world.addComponent(entity2Id, 'position', { x: 10, y: 0 });
+		world.addComponent(entity2.id, 'health', { value: 100 });
+		world.addComponent(entity2.id, 'position', { x: 10, y: 0 });
 		
 		const movementActions: Record<number, any[]> = {
-			[entityId]: [],
-			[entity2Id]: []
+			[entity.id]: [],
+			[entity2.id]: []
 		};
 		
-		world.addSystem({
-			label: 'EventDrivenDamageSystem',
-			eventHandlers: {
+		world.addSystem(
+			createSystem<TestComponents>('EventDrivenDamageSystem')
+			.setEventHandlers({
 				collision: {
 					handler(
 						data,
@@ -347,14 +338,13 @@ describe('EventSystem', () => {
 						}
 					}
 				}
-			}
-		});
+			})
+		);
 		
 		// Create a movement system that reacts to health changes
-		world.addSystem({
-			label: 'HealthReactiveMovementSystem',
-			with: ['position'],
-			eventHandlers: {
+		world.addSystem(
+			createSystem<TestComponents>('HealthReactiveMovementSystem')
+			.setEventHandlers({
 				healthChanged: {
 					handler(
 						data,
@@ -390,56 +380,52 @@ describe('EventSystem', () => {
 						}
 					}
 				}
-			},
-			// Regular process method continues to run
-			process(entities, deltaTime, entityManager, eventBus) {
-				// This could update entities based on non-event logic
-			}
-		});
+			})
+		);
 		
 		// Trigger the cascade of events with real entities
 		eventBus.publish('collision', {
-			entity1Id: entityId,
-			entity2Id: entity2Id
+			entity1Id: entity.id,
+			entity2Id: entity2.id
 		});
 		
 		// Verify health was updated
-		const updatedHealth = world.getComponent(entityId, 'health');
+		const updatedHealth = world.getComponent(entity.id, 'health');
 		expect(updatedHealth?.value).toBe(90);
 		
 		// Verify position was updated in response to health change
-		const updatedPosition = world.getComponent(entityId, 'position');
+		const updatedPosition = world.getComponent(entity.id, 'position');
 		expect(updatedPosition).toEqual({ x: 1, y: 1 });
 		
 		// Verify movement action was recorded
 		// Ensure we have an array to avoid TypeScript errors
-		expect(Array.isArray(movementActions[entityId])).toBe(true);
-		const entityActions = movementActions[entityId] || [];
+		expect(Array.isArray(movementActions[entity.id])).toBe(true);
+		const entityActions = movementActions[entity.id] || [];
 		expect(entityActions.length).toBe(1);
 		expect(entityActions[0].newPosition).toEqual({ x: 1, y: 1 });
 		
 		// Verify second entity was also updated
-		const updatedHealth2 = world.getComponent(entity2Id, 'health');
+		const updatedHealth2 = world.getComponent(entity2.id, 'health');
 		expect(updatedHealth2?.value).toBe(90);
 		
 		// Trigger additional collision to reduce health below 50
 		for (let i = 0; i < 5; i++) {
 			eventBus.publish('collision', {
-				entity1Id: entityId,
-				entity2Id: entity2Id
+				entity1Id: entity.id,
+				entity2Id: entity2.id
 			});
 		}
 		
 		// Health should now be below 50
-		const finalHealth = world.getComponent(entityId, 'health');
+		const finalHealth = world.getComponent(entity.id, 'health');
 		expect(finalHealth?.value).toBe(40);
 		
 		// The last movement should have used the larger direction value
-		const finalPosition = world.getComponent(entityId, 'position');
+		const finalPosition = world.getComponent(entity.id, 'position');
 		expect(finalPosition?.x).toBeGreaterThan(5); // Multiple movements with larger steps
 		
 		// Verify the last movement action used direction 10
-		const entityMovements = movementActions[entityId] || [];
+		const entityMovements = movementActions[entity.id] || [];
 		// Ensure we have enough movements to compare
 		expect(entityMovements.length).toBeGreaterThan(1);
 		const lastMovement = entityMovements[entityMovements.length - 1];

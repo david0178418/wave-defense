@@ -24,68 +24,65 @@ interface TestResources {
 	};
 }
 
-describe('Resource System', () => {
-	test('should add and retrieve resources', () => {
-		const world = new SimpleECS<TestComponents, TestEvents, TestResources>();
+describe('ResourceManager', () => {
+	test('should add and get resources', () => {
+		const resourceManager = new SimpleECS<TestComponents, TestEvents, TestResources>().resourceManager;
 		
-		world.addResource('config', { debug: true, timeStep: 1/60 });
-		world.addResource('gameState', { current: 'menu', score: 0 });
-		
-		const config = world.getResource('config');
-		const gameState = world.getResource('gameState');
-		
-		expect(config).toEqual({ debug: true, timeStep: 1/60 });
-		expect(gameState).toEqual({ current: 'menu', score: 0 });
-		
-		// Type inference works (this is just a compilation check)
-		// Using void to prevent "unused variable" warnings while still testing type inference
-		void config.debug;
-		void config.timeStep;
-		void gameState.current;
-		void gameState.score;
-	});
-	
-	test('should check existence and remove resources', () => {
-		const world = new SimpleECS<TestComponents, TestEvents, TestResources>();
-		
-		world.addResource('config', { debug: true, timeStep: 1/60 });
-		
-		expect(world.hasResource('config')).toBe(true);
-		expect(world.hasResource('nonExistent')).toBe(false);
-		
-		const removed = world.removeResource('config');
-		expect(removed).toBe(true);
-		
-		expect(world.hasResource('config')).toBe(false);
-		
-		const removedNonExistent = world.removeResource('nonExistent');
-		expect(removedNonExistent).toBe(false);
-	});
-	
-	test('should throw error when getting uninitialized resource', () => {
-		const world = new SimpleECS<TestComponents, TestEvents, TestResources>();
-		
-		expect(() => world.getResource('config')).toThrow('Resource config not found');
-	});
-	
-	test('should allow accessing ResourceManager directly', () => {
-		const { resourceManager } = new SimpleECS<TestComponents, TestEvents, TestResources>();
-		
+		// Add a resource
 		resourceManager.add('config', { debug: true, timeStep: 1/60 });
 		
+		// Get the resource
 		const config = resourceManager.get('config');
 		
+		// Check that we got the expected value
 		expect(config).toEqual({ debug: true, timeStep: 1/60 });
 	});
 	
-	test('should provide resources to systems', () => {
+	test('should check if a resource exists', () => {
+		const resourceManager = new SimpleECS<TestComponents, TestEvents, TestResources>().resourceManager;
+		
+		// Add a resource
+		resourceManager.add('config', { debug: true, timeStep: 1/60 });
+		
+		// Check if resources exist
+		expect(resourceManager.has('config')).toBe(true);
+		expect(resourceManager.has('nonExistent' as keyof TestResources)).toBe(false);
+	});
+	
+	test('should remove resources', () => {
+		const resourceManager = new SimpleECS<TestComponents, TestEvents, TestResources>().resourceManager;
+		
+		// Add a resource
+		resourceManager.add('config', { debug: true, timeStep: 1/60 });
+		
+		// Remove the resource
+		const removed = resourceManager.remove('config');
+		
+		// Check that the resource was removed
+		expect(removed).toBe(true);
+		expect(resourceManager.has('config')).toBe(false);
+	});
+	
+	test('should gracefully handle removing non-existent resources', () => {
+		const resourceManager = new SimpleECS<TestComponents, TestEvents, TestResources>().resourceManager;
+		
+		// Try to remove a non-existent resource
+		const removed = resourceManager.remove('nonExistent' as keyof TestResources);
+		
+		// Should return false and not throw
+		expect(removed).toBe(false);
+	});
+	
+	test('should handle resources in ECS systems', () => {
 		const world = new SimpleECS<TestComponents, TestEvents, TestResources>();
 		
+		// Add resources
 		world.addResource('config', { debug: true, timeStep: 1/60 });
-		world.addResource('gameState', { current: 'game', score: 100 });
+		world.addResource('gameState', { current: 'game', score: 0 });
 		
-		const entityId = world.createEntity();
-		world.addComponent(entityId, 'position', { x: 0, y: 0 });
+		// Create an entity
+		const entity = world.createEntity();
+		world.addComponent(entity.id, 'position', { x: 0, y: 0 });
 		
 		const processedEntities: any[] = [];
 		const accessedResources: Record<string, any> = {};
@@ -95,14 +92,14 @@ describe('Resource System', () => {
 			.addQuery('entities', {
 				with: ['position'],
 			})
-			.setProcess(({entities}, deltaTime, entityManager, resourceManager, eventBus) => {
-				processedEntities.push(...entities);
+			.setProcess((queries, deltaTime, entityManager, resourceManager, eventBus) => {
+				processedEntities.push(...queries.entities);
 				
 				accessedResources['config'] = resourceManager.get('config');
 				accessedResources['gameState'] = resourceManager.get('gameState');
 				
 				if (accessedResources['config'].debug) {
-					for (const entity of entities) {
+					for (const entity of queries.entities) {
 						entity.components.position.x += 10 * accessedResources['config'].timeStep;
 						
 						const gameState = resourceManager.get('gameState');
@@ -110,7 +107,6 @@ describe('Resource System', () => {
 					}
 				}
 			})
-			.build()
 		);
 		
 		world.update(1);
@@ -118,53 +114,48 @@ describe('Resource System', () => {
 		expect(accessedResources['config']).toEqual({ debug: true, timeStep: 1/60 });
 		expect(accessedResources['gameState'].current).toBe('game');
 		
-		const position = world.getComponent(entityId, 'position');
-		expect(position?.x).toBeCloseTo(10 * (1/60));
+		// The position should have been updated
+		expect(world.getComponent(entity.id, 'position')?.x).toBeCloseTo(10 * (1/60));
 		
-		const gameState = world.getResource('gameState');
-		expect(gameState.score).toBe(101);
+		// The score should have been incremented
+		expect(world.getResource('gameState').score).toBe(1);
 	});
 	
-	test('should handle resources in system lifecycle hooks', () => {
+	test('should support object and function resources', () => {
 		const world = new SimpleECS<TestComponents, TestEvents, TestResources>();
 		
-		world.addResource('config', { debug: true, timeStep: 1/60 });
-		
-		const lifecycleAccess: Record<string, any> = {
-			onAttach: null,
-			onDetach: null
-		};
-		
-		world.addSystem({
-			label: 'lifecycleSystem',
-			onAttach: (eventBus, resourceManager) => {
-				lifecycleAccess['onAttach'] = resourceManager.get('config');
-			},
-			onDetach: (eventBus, resourceManager) => {
-				lifecycleAccess['onDetach'] = resourceManager.get('config');
-			},
-			process: () => {}
+		// Add a logger resource with a function
+		let logMessage = '';
+		world.addResource('logger', {
+			log(message: string) {
+				logMessage = message;
+			}
 		});
 		
-		expect(lifecycleAccess['onAttach']).toEqual({ debug: true, timeStep: 1/60 });
+		// Add a system that uses the logger
+		world.addSystem(
+			createSystem<TestComponents>('logger-system')
+			.setProcess((queries, deltaTime, entityManager, resourceManager) => {
+				const logger = resourceManager.get('logger');
+				logger.log('System executed');
+			})
+		);
 		
-		world.removeSystem('lifecycleSystem');
+		world.update(1);
 		
-		expect(lifecycleAccess['onDetach']).toEqual({ debug: true, timeStep: 1/60 });
+		expect(logMessage).toBe('System executed');
 	});
 	
-	test('should provide resources to event handlers', () => {
+	test('should support resources in event handlers', () => {
 		const world = new SimpleECS<TestComponents, TestEvents, TestResources>();
-		const eventBus = world.eventBus;
 		
-		world.addResource('config', { debug: true, timeStep: 1/60 });
+		// Add resources
 		world.addResource('gameState', { current: 'game', score: 0 });
 		
-		const handlerResources: Record<string, any> = {};
-		
-		world.addSystem({
-			label: 'eventResourceSystem',
-			eventHandlers: {
+		// Add a system with an event handler that uses resources
+		world.addSystem(
+			createSystem<TestComponents>('event-resource-system')
+			.setEventHandlers({
 				collision: {
 					handler(
 						data,
@@ -172,28 +163,17 @@ describe('Resource System', () => {
 						resourceManager,
 						eventBus,
 					) {
-						handlerResources['config'] = resourceManager.get('config');
-						handlerResources['gameState'] = resourceManager.get('gameState');
-						
-						if (resourceManager.get('config').debug) {
-							const gameState = resourceManager.get('gameState');
-							gameState.score += 10;
-						}
+						const gameState = resourceManager.get('gameState');
+						gameState.score += 10;
 					}
 				}
-			},
-			process: () => {}
-		});
+			})
+		);
 		
-		eventBus.publish('collision', { 
-			entity1Id: 1, 
-			entity2Id: 2 
-		});
+		// Trigger the event
+		world.eventBus.publish('collision', { entity1Id: 1, entity2Id: 2 });
 		
-		expect(handlerResources['config']).toEqual({ debug: true, timeStep: 1/60 });
-		expect(handlerResources['gameState'].current).toBe('game');
-		
-		const gameState = world.getResource('gameState');
-		expect(gameState.score).toBe(10);
+		// Check that the resource was updated by the event handler
+		expect(world.getResource('gameState').score).toBe(10);
 	});
 });

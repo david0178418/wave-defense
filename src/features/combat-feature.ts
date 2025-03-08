@@ -1,4 +1,4 @@
-import SimpleECS, { Feature, createSystem } from "../lib/simple-ecs";
+import SimpleECS, { Feature } from "../lib/simple-ecs";
 import type { Components, Resources, Events } from "../types";
 import { EntityType } from "./entity-type-feature";
 
@@ -69,10 +69,12 @@ interface CombatEvents {
 
 export default
 function combatFeature(game: SimpleECS<Components, Events, Resources>) {
-	return new Feature<Components, Events, Resources>(game)
+	const feature = new Feature<Components, Events, Resources>(game);
+	
+	return feature
 		// Process damage application
 		.addSystem(
-			createSystem<Components>('damage-dealing')
+			feature.createSystem('damage-dealing')
 				.addQuery('damageDealers', {
 					with: ['position', 'sprite', 'damageDealer']
 				})
@@ -81,11 +83,10 @@ function combatFeature(game: SimpleECS<Components, Events, Resources>) {
 					// It currently doesn't do anything since we removed the cooldown logic
 					// But keeping the system allows us to easily reintroduce functionality later
 				})
-				.build()
 		)
 		// Handles damage effects like invincibility and visual feedback
 		.addSystem(
-			createSystem<Components>('damage-effects')
+			feature.createSystem('damage-effects')
 				.addQuery('invincibleEntities', {
 					with: ['sprite', 'invincible']
 				})
@@ -120,12 +121,11 @@ function combatFeature(game: SimpleECS<Components, Events, Resources>) {
 						}
 					}
 				})
-				.build()
 		)
 		
 		// Event handler for damage events
 		.addSystem(
-			createSystem<Components>('damage-event-handler')
+			feature.createSystem('damage-event-handler')
 				.setEventHandlers({
 					entityDamaged: {
 						handler(data, entityManager, resourceManager, eventBus) {
@@ -247,7 +247,5 @@ function combatFeature(game: SimpleECS<Components, Events, Resources>) {
 						}
 					}
 				})
-				.build()
-		)
-		.install();
+		);
 } 

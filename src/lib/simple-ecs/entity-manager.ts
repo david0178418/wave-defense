@@ -6,22 +6,24 @@ class EntityManager<ComponentTypes> {
 	private entities: Map<number, Entity<ComponentTypes>> = new Map();
 	private componentIndices: Map<keyof ComponentTypes, Set<number>> = new Map();
 	
-	createEntity(): number {
+	createEntity(): Entity<ComponentTypes> {
 		const id = this.nextId++;
 		const entity: Entity<ComponentTypes> = { id, components: {} };
 		this.entities.set(id, entity);
-		return id;
+		return entity;
 	}
 
 	// TODO: Component object pooling if(/when) garbage collection is an issue...?
 	addComponent<ComponentName extends keyof ComponentTypes>(
-		entityId: number,
+		entityOrId: number | Entity<ComponentTypes>,
 		componentName: ComponentName,
 		data: ComponentTypes[ComponentName]
 	) {
-		const entity = this.entities.get(entityId);
+		const entity = typeof entityOrId === 'number' ?
+			this.entities.get(entityOrId) :
+			entityOrId;
 
-		if (!entity) throw new Error(`Entity ${entityId} does not exist`);
+		if (!entity) throw new Error(`Entity ${entityOrId} does not exist`);
 
 		entity.components[componentName] = data;
 		
@@ -29,7 +31,7 @@ class EntityManager<ComponentTypes> {
 		if (!this.componentIndices.has(componentName)) {
 			this.componentIndices.set(componentName, new Set());
 		}
-		this.componentIndices.get(componentName)?.add(entityId);
+		this.componentIndices.get(componentName)?.add(entity.id);
 		return this;
 	}
 

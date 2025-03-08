@@ -1,4 +1,4 @@
-import SimpleECS, { Feature, createSystem } from "../lib/simple-ecs";
+import SimpleECS, { Feature } from "../lib/simple-ecs";
 
 export
 interface MovementComponents {
@@ -13,9 +13,11 @@ interface MovementComponents {
 
 export default
 function movementFeature(game: SimpleECS<any, any, any>) {
-	return new Feature<MovementComponents>(game)
+	const feature = new Feature<MovementComponents>(game);
+	
+	return feature
 		.addSystem(
-			createSystem<MovementComponents>('movement-system')
+			feature.createSystem('movement-system')
 				.addQuery('positionEntities', {
 					with: ['position', 'velocity'],
 					without: ['frozen']
@@ -57,8 +59,6 @@ function movementFeature(game: SimpleECS<any, any, any>) {
 						entity.components.position.y += entity.components.velocity.y * deltaTime;
 					}
 				})
-				.build()
-		)
-		.install();
+		);
 }
 

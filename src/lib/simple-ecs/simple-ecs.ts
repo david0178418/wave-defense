@@ -1,6 +1,7 @@
 import EntityManager from "./entity-manager";
 import EventBus from "./event-bus";
 import ResourceManager from "./resource-manager";
+import { createSystem, SystemBuilder } from "./system-builder";
 import type { System } from "./types";
 
 export default
@@ -20,10 +21,11 @@ class SimpleECS<
 		this._resourceManager = new ResourceManager<ResourceTypes>();
 	}
 
-	addSystem<
-		WithComponents extends keyof ComponentTypes = never,
-		WithoutComponents extends keyof ComponentTypes = never
-	>(system: System<ComponentTypes, WithComponents, WithoutComponents, EventTypes, ResourceTypes>) {
+	addSystem(systemBuilder: SystemBuilder<ComponentTypes, EventTypes, ResourceTypes, any>) {
+		// Build the system first
+		const system = systemBuilder.build();
+		
+		// Add to systems list
 		this._systems.push(system);
 		
 		// Call onAttach if defined
@@ -117,7 +119,7 @@ class SimpleECS<
 		return this._resourceManager;
 	}
 
-	createEntity(): number {
+	createEntity() {
 		return this._entityManager.createEntity();
 	}
 
@@ -161,5 +163,9 @@ class SimpleECS<
 
 	removeResource(label: string): boolean {
 		return this._resourceManager.remove(label);
+	}
+
+	createSystem(label: string): SystemBuilder<ComponentTypes, EventTypes, ResourceTypes> {
+		return createSystem<ComponentTypes, EventTypes, ResourceTypes>(label);
 	}
 }

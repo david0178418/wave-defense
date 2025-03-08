@@ -23,7 +23,7 @@ interface EntityTypeComponents {
 
 export default
 function entityTypeFeature(game: SimpleECS<Components, Events, Resources>) {
-	return new Feature<Components, Events, Resources>(game)
-		// We don't need any systems here, just providing the component types
-		.install();
+	const feature = new Feature<Components, Events, Resources>(game);
+	
+	return feature;
 } 

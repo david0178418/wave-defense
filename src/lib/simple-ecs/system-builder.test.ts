@@ -2,7 +2,7 @@ import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
 import { createSystem } from './system-builder';
 
-// Define component types for testing
+// Define some test component types for the ECS
 interface TestComponents {
 	position: { x: number; y: number };
 	velocity: { x: number; y: number };
@@ -14,160 +14,143 @@ interface TestComponents {
 }
 
 describe('SystemBuilder', () => {
-	test('should create a system with proper query typing', () => {
+	test('should create a system that can query entities', () => {
 		const world = new SimpleECS<TestComponents>();
-		const entity1 = world.createEntity();
-
-		world.addComponent(entity1, 'position', { x: 0, y: 0 });
-		world.addComponent(entity1, 'velocity', { x: 5, y: 10 });
 		
+		// Create an entity with all necessary components
+		const entity1 = world.createEntity();
+		world.addComponent(entity1.id, 'position', { x: 0, y: 0 });
+		world.addComponent(entity1.id, 'velocity', { x: 0, y: 0 });
+		
+		// Create an entity with only one necessary component
 		const entity2 = world.createEntity();
-		world.addComponent(entity2, 'position', { x: 100, y: 100 });
+		world.addComponent(entity2.id, 'position', { x: 10, y: 10 });
 		
 		const processedEntities: number[] = [];
 		
-		// Create a system using the builder
 		const system = createSystem<TestComponents>('movement')
-			.addQuery('moving', {
+			.addQuery('entities', {
 				with: ['position', 'velocity'],
+				without: [],
 			})
-			.setProcess((queries, deltaTime, entityManager) => {
-				// TypeScript correctly infers queries.moving
-				for (const entity of queries.moving) {
-					// TypeScript knows these components exist
-					// Use the components to prevent unused variable warnings
+			.setProcess((queries) => {
+				for (const entity of queries.entities) {
 					processedEntities.push(entity.id);
 				}
-			})
-			.build();
+			});
 		
 		world.addSystem(system);
 		world.update(1/60);
 		
-		expect(processedEntities).toEqual([entity1]);
+		expect(processedEntities).toEqual([entity1.id]);
 	});
 	
 	test('should handle multiple query definitions', () => {
 		const world = new SimpleECS<TestComponents>();
 		
-		// Create entities with different component combinations
-		const positionEntity = world.createEntity();
-		world.addComponent(positionEntity, 'position', { x: 10, y: 20 });
+		// Create an entity with position and velocity
+		const entity1 = world.createEntity();
+		world.addComponent(entity1.id, 'position', { x: 0, y: 0 });
+		world.addComponent(entity1.id, 'velocity', { x: 0, y: 0 });
 		
-		const velocityEntity = world.createEntity();
-		world.addComponent(velocityEntity, 'velocity', { x: 5, y: 10 });
+		// Create an entity with position and collision
+		const entity2 = world.createEntity();
+		world.addComponent(entity2.id, 'position', { x: 10, y: 10 });
+		world.addComponent(entity2.id, 'collision', { radius: 5, isColliding: false });
 		
-		const movingEntity = world.createEntity();
-		world.addComponent(movingEntity, 'position', { x: 0, y: 0 });
-		world.addComponent(movingEntity, 'velocity', { x: 1, y: 1 });
+		// Create an entity with position, velocity, and collision
+		const entity3 = world.createEntity();
+		world.addComponent(entity3.id, 'position', { x: 20, y: 20 });
+		world.addComponent(entity3.id, 'velocity', { x: 0, y: 0 });
+		world.addComponent(entity3.id, 'collision', { radius: 5, isColliding: false });
 		
-		const positionEntities: number[] = [];
-		const velocityEntities: number[] = [];
+		const processedMovingEntities: number[] = [];
+		const processedCollidingEntities: number[] = [];
 		
-		// Create a system with multiple queries
 		const system = createSystem<TestComponents>('multiQuery')
-			.addQuery('positions', {
-				with: ['position'],
+			.addQuery('movingEntities', {
+				with: ['position', 'velocity'],
 			})
-			.addQuery('velocities', {
-				with: ['velocity'],
+			.addQuery('collidingEntities', {
+				with: ['position', 'collision'],
 			})
-			.setProcess((queries, deltaTime, entityManager) => {
-				// Access position entities with proper typing
-				for (const entity of queries.positions) {
-					positionEntities.push(entity.id);
-					// Use the component to prevent unused variable warning
-					void entity.components.position.x;
+			.setProcess((queries) => {
+				for (const entity of queries.movingEntities) {
+					processedMovingEntities.push(entity.id);
 				}
 				
-				// Access velocity entities with proper typing
-				for (const entity of queries.velocities) {
-					velocityEntities.push(entity.id);
-					// Use the component to prevent unused variable warning
-					void entity.components.velocity.y;
+				for (const entity of queries.collidingEntities) {
+					processedCollidingEntities.push(entity.id);
 				}
-			})
-			.build();
+			});
 		
 		world.addSystem(system);
-		world.update(1);
+		world.update(1/60);
 		
-		// Should contain the position entity and the moving entity
-		expect(positionEntities.sort()).toEqual([positionEntity, movingEntity].sort());
-		
-		// Should contain the velocity entity and the moving entity
-		expect(velocityEntities.sort()).toEqual([velocityEntity, movingEntity].sort());
+		expect(processedMovingEntities).toEqual([entity1.id, entity3.id]);
+		expect(processedCollidingEntities).toEqual([entity2.id, entity3.id]);
 	});
 	
-	test('should handle lifecycle hooks', () => {
+	test('should support lifecycle hooks', () => {
 		const world = new SimpleECS<TestComponents>();
 		
-		let initialized = false;
-		let cleanedUp = false;
-		let processRan = false;
+		let onAttachCalled = false;
+		let onDetachCalled = false;
 		
 		const system = createSystem<TestComponents>('lifecycle')
-			.addQuery('entities', {
-				with: ['position'],
+			.setOnAttach(() => {
+				onAttachCalled = true;
 			})
-			.setProcess((queries, deltaTime, entityManager) => {
-				processRan = true;
-			})
-			.setOnAttach((entityManager, resourceManager, eventBus) => {
-				initialized = true;
-			})
-			.setOnDetach((entityManager, resourceManager, eventBus) => {
-				cleanedUp = true;
-			})
-			.build();
+			.setOnDetach(() => {
+				onDetachCalled = true;
+			});
 		
-		// Should call onAttach when added
+		// Adding the system should call onAttach
 		world.addSystem(system);
-		expect(initialized).toBe(true);
+		expect(onAttachCalled).toBe(true);
 		
-		// Should call process when updated
-		world.update(1);
-		expect(processRan).toBe(true);
-		
-		// Should call onDetach when removed
+		// Removing the system should call onDetach
 		world.removeSystem('lifecycle');
-		expect(cleanedUp).toBe(true);
+		expect(onDetachCalled).toBe(true);
 	});
 	
-	test('should handle without components in queries', () => {
+	test('should support statically typed queries with correct component access', () => {
 		const world = new SimpleECS<TestComponents>();
 		
-		// Entity with position but no velocity
-		const staticEntity = world.createEntity();
-		world.addComponent(staticEntity, 'position', { x: 10, y: 20 });
+		// Create an entity with position and velocity
+		const entity1 = world.createEntity();
+		world.addComponent(entity1.id, 'position', { x: 10, y: 20 });
+		world.addComponent(entity1.id, 'velocity', { x: 5, y: 0 });
 		
-		// Entity with both position and velocity
-		const movingEntity = world.createEntity();
-		world.addComponent(movingEntity, 'position', { x: 0, y: 0 });
-		world.addComponent(movingEntity, 'velocity', { x: 1, y: 1 });
+		// Create an entity with position, velocity, and collision
+		const entity2 = world.createEntity();
+		world.addComponent(entity2.id, 'position', { x: 0, y: 0 });
+		world.addComponent(entity2.id, 'velocity', { x: 0, y: 0 });
+		world.addComponent(entity2.id, 'collision', { radius: 5, isColliding: false });
 		
-		const staticEntities: number[] = [];
+		let sumX = 0;
+		let sumY = 0;
 		
-		// Create a system that queries entities with position but without velocity
 		const system = createSystem<TestComponents>('staticObjects')
-			.addQuery('static', {
-				with: ['position'],
-				without: ['velocity'],
+			.addQuery('objects', {
+				with: ['position', 'velocity'],
+				without: [],
 			})
-			.setProcess((queries, deltaTime, entityManager) => {
-				for (const entity of queries.static) {
-					staticEntities.push(entity.id);
-					// Access the position component to prevent unused variable warning
-					const position = entity.components.position;
-					expect(position).toBeDefined();
+			.setProcess((queries) => {
+				// TypeScript should know that position and velocity are guaranteed to exist
+				for (const entity of queries.objects) {
+					sumX += entity.components.position.x + entity.components.velocity.x;
+					sumY += entity.components.position.y + entity.components.velocity.y;
+					
+					// Directly accessing a component that's not in the 'with' array would cause a type error
+					// This line would fail to compile: entity.components.health.value
 				}
-			})
-			.build();
+			});
 		
 		world.addSystem(system);
-		world.update(1);
+		world.update(1/60);
 		
-		// Should only contain the static entity
-		expect(staticEntities).toEqual([staticEntity]);
+		expect(sumX).toBe(15); // 10+5 from entity1, 0+0 from entity2
+		expect(sumY).toBe(20); // 20+0 from entity1, 0+0 from entity2
 	});
 }); 

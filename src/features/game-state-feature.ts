@@ -1,5 +1,5 @@
 import { Application, Sprite, Texture, Container, Graphics, Text } from "pixi.js";
-import SimpleECS, { Feature, createSystem } from "../lib/simple-ecs";
+import SimpleECS, { Feature } from "../lib/simple-ecs";
 import type { Components, Resources, Events } from "../types";
 import type EntityManager from "../lib/simple-ecs/entity-manager";
 import type ResourceManager from "../lib/simple-ecs/resource-manager";
@@ -14,9 +14,11 @@ interface GameStateComponents {
 
 export default
 function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
-	return new Feature<Components, Events, Resources>(game)
+	const feature = new Feature<Components, Events, Resources>(game);
+	
+	return feature
 		.addSystem(
-			createSystem<Components>('initialize-game')
+			feature.createSystem('initialize-game')
 				.setEventHandlers({
 					initializeGame: {
 						async handler(data, entityManager, resourceManager, eventBus) {
@@ -64,10 +66,9 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 						},
 					},
 				})
-				.build()
 		)
 		.addSystem(
-			createSystem<Components>('initialize-map')
+			feature.createSystem('initialize-map')
 				.setEventHandlers({
 					initializeMap: {
 						handler(data: undefined, entityManager: EntityManager<Components>, resourceManager: ResourceManager<Resources>, eventBus: EventBus<Events>) {
@@ -102,10 +103,9 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 						},
 					},
 				})
-				.build()
 		)
 		.addSystem(
-			createSystem<Components>('initialize-player')
+			feature.createSystem('initialize-player')
 				.setEventHandlers({
 					initializePlayer: {
 						handler(data: undefined, entityManager: EntityManager<Components>, resourceManager: ResourceManager<Resources>, eventBus: EventBus<Events>) {
@@ -170,10 +170,9 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 						},
 					},
 				})
-				.build()
 		)
 		.addSystem(
-			createSystem<Components>('game-over-handler')
+			feature.createSystem('game-over-handler')
 				.addQuery('enemies', {
 					with: ['enemy']
 				})
@@ -187,12 +186,11 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 				})
 				.setEventHandlers({
 					gameOver: {
-						handler(queries, entityManager, resourceManager) {
+						handler(data: undefined, entityManager: EntityManager<Components>, resourceManager: ResourceManager<Resources>, eventBus: EventBus<Events>) {
 							console.log("Game Over! Resetting game...");
-							const {
-								enemies,
-								players,
-							} = queries;
+							// Get enemies and players from queries
+							const enemies = entityManager.getEntitiesWithComponents(['enemy']);
+							const players = entityManager.getEntitiesWithComponents(['player', 'position', 'velocity', 'health']);
 							
 							// Display game over message
 							const healthText = resourceManager.get('healthText');
@@ -249,10 +247,9 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 						},
 					},
 				})
-				.build()
 		)
 		.addSystem(
-			createSystem<Components>('camera-follow')
+			feature.createSystem('camera-follow')
 				.addQuery('player', {
 					with: ['position', 'player']
 				})
@@ -325,10 +322,9 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 					worldContainer.position.x = Math.max(minCameraX, Math.min(maxCameraX, worldContainer.position.x));
 					worldContainer.position.y = Math.max(minCameraY, Math.min(maxCameraY, worldContainer.position.y));
 				})
-				.build()
 		)
 		.addSystem(
-			createSystem<Components>('update-sprite-position')
+			feature.createSystem('update-sprite-position')
 				.addQuery('sprites', {
 					with: ['position', 'sprite'],
 					without: ['frozen']
@@ -340,7 +336,5 @@ function gameStateFeature(game: SimpleECS<Components, Events, Resources>) {
 						entity.components.sprite.position.set(entity.components.position.x, entity.components.position.y);
 					}
 				})
-				.build()
-		)
-		.install();
+		);
 } 

@@ -1,4 +1,4 @@
-import SimpleECS, { Feature, createSystem } from "../lib/simple-ecs";
+import SimpleECS, { Feature } from "../lib/simple-ecs";
 import type { Components, Resources, Events } from "../types";
 import { EntityType } from "./entity-type-feature";
 
@@ -36,10 +36,12 @@ interface CollisionEvents {
 
 export default
 function collisionFeature(game: SimpleECS<Components, Events, Resources>) {
-	return new Feature<Components, Events, Resources>(game)
+	const feature = new Feature<Components, Events, Resources>(game);
+	
+	return feature
 		// Detect and process collisions between entities
 		.addSystem(
-			createSystem<Components>('collision-detection')
+			feature.createSystem('collision-detection')
 			.addQuery('collidableEntities', {
 				with: [
 					'position',
@@ -145,7 +147,5 @@ function collisionFeature(game: SimpleECS<Components, Events, Resources>) {
 				// This section can be extended to handle other specific collision pairs
 				// ... 
 			})
-			.build()
-		)
-		.install();
+		);
 } 

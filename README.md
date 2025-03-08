@@ -65,7 +65,7 @@ Systems process entities with specific components. There are two ways to create 
 import { createSystem } from "./simple-ecs";
 
 // Create a movement system using the builder pattern
-const movementSystem = createSystem<GameComponents>('movement-system')
+const movementSystem = createSystem('movement-system')
   .addEntityQuery('moving', {
     with: ['position', 'velocity'],  // Required components
     without: ['frozen']              // Excluded components
@@ -93,7 +93,7 @@ game.addSystem(movementSystem);
 
 // Or add it directly using method chaining
 game.addSystem(
-  createSystem<GameComponents>('collision-system')
+  createSystem('collision-system')
     .addEntityQuery('collidable', {
       with: ['position', 'collider']
     })
@@ -174,7 +174,7 @@ Systems can have dedicated event handlers:
 ```typescript
 // Using SystemBuilder (Recommended)
 game.addSystem(
-  createSystem<GameComponents>('damage-system')
+  createSystem('damage-system')
     .setEventHandlers({
       collision: {
         handler: (data, entityManager, resourceManager, eventBus) => {
@@ -222,7 +222,7 @@ Systems can use lifecycle hooks:
 ```typescript
 // Using SystemBuilder (Recommended)
 game.addSystem(
-  createSystem<GameComponents>('lifecycle-system')
+  createSystem('lifecycle-system')
     .setOnAttach((entityManager, resourceManager, eventBus) => {
       // Called when system is added to game
       console.log("System attached");

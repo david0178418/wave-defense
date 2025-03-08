@@ -179,6 +179,12 @@ type LifecycleFunction<
 ) => void;
 
 // Factory function for easier creation
-export function createSystem<ComponentTypes>(label: string) {
-	return new SystemBuilder<ComponentTypes>(label);
+export function createSystem<
+	ComponentTypes,
+	EventTypes = any,
+	ResourceTypes = any
+>(
+	label: string
+): SystemBuilder<ComponentTypes, EventTypes, ResourceTypes> {
+	return new SystemBuilder<ComponentTypes, EventTypes, ResourceTypes>(label);
 } 

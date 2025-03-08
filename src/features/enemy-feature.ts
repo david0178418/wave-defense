@@ -1,5 +1,5 @@
 import { Sprite, Texture } from "pixi.js";
-import SimpleECS, { Feature, createSystem } from "../lib/simple-ecs";
+import SimpleECS, { Feature } from "../lib/simple-ecs";
 import type { Components, Resources, Events } from "../types";
 import { EntityType } from "./entity-type-feature";
 import { DamageType } from "./combat-feature";
@@ -56,9 +56,11 @@ const ENEMY_STATS: Record<EntityType, EnemyStats> = {
 
 export default
 function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
-	return new Feature<Components, Events, Resources>(game)
+	const feature = new Feature<Components, Events, Resources>(game);
+	
+	return feature
 		.addSystem(
-			createSystem<Components>('enemy-spawning')
+			feature.createSystem('enemy-spawning')
 				.addQuery('basicEnemies', {
 					with: ['enemy', 'entityType'],
 					without: []
@@ -177,12 +179,12 @@ function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
 						
 						// Add basic components to all enemies
 						entityManager
-							.addComponent(enemy, 'enemy', true) // Mark as enemy
-							.addComponent(enemy, 'sprite', sprite)
-							.addComponent(enemy, 'position', { x, y })
-							.addComponent(enemy, 'velocity', { x: 0, y: 0 })
-							.addComponent(enemy, 'drag', { x: 1, y: 1 })
-							.addComponent(enemy, 'maxVelocity', { x: stats.speed * 1.5, y: stats.speed * 1.5 }); // Higher than speed to allow for bursts
+							.addComponent(enemy.id, 'enemy', true) // Mark as enemy
+							.addComponent(enemy.id, 'sprite', sprite)
+							.addComponent(enemy.id, 'position', { x, y })
+							.addComponent(enemy.id, 'velocity', { x: 0, y: 0 })
+							.addComponent(enemy.id, 'drag', { x: 1, y: 1 })
+							.addComponent(enemy.id, 'maxVelocity', { x: stats.speed * 1.5, y: stats.speed * 1.5 }); // Higher than speed to allow for bursts
 						
 						// Add entity type component
 						entityManager.addComponent(enemy, 'entityType', {
@@ -211,10 +213,9 @@ function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
 						});
 					}
 				})
-				.build()
 		)
 		.addSystem(
-			createSystem<Components>('enemy-movement')
+			feature.createSystem('enemy-movement')
 				.addQuery('enemies', {
 					with: ['position', 'velocity', 'enemy']
 				})
@@ -248,21 +249,25 @@ function enemyFeature(game: SimpleECS<Components, Events, Resources>) {
 						
 						if (length > 0) {
 							// Get this enemy's speed based on type
-							let enemySpeed = 50; // Default
+							let speed = 50; // Default speed
+							
+							// Get entity type to determine speed
 							if (enemy.components.entityType) {
-								const stats = ENEMY_STATS[enemy.components.entityType.type as EntityType];
-								if (stats) {
-									enemySpeed = stats.speed;
+								const enemyType = enemy.components.entityType.type;
+								if (ENEMY_STATS[enemyType]) {
+									speed = ENEMY_STATS[enemyType].speed;
 								}
 							}
 							
-							// Set the enemy velocity in the player's direction
-							enemy.components.velocity.x = (dirX / length) * enemySpeed;
-							enemy.components.velocity.y = (dirY / length) * enemySpeed;
+							// Calculate normalized direction and apply speed
+							const normX = dirX / length;
+							const normY = dirY / length;
+							
+							// Update enemy velocity
+							enemy.components.velocity.x = normX * speed;
+							enemy.components.velocity.y = normY * speed;
 						}
 					}
 				})
-				.build()
-		)
-		.install();
+		);
 } 
