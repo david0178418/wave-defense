@@ -73,6 +73,10 @@ export default class Bundle<
 		return new Map(this._resources);
 	}
 
+	getResource<K extends keyof ResourceTypes>(key: K): ResourceTypes[K] {
+		return this._resources.get(key);
+	}
+
 	/**
 	 * Get the system builders for internal use
 	 * @internal
