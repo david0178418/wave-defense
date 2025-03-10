@@ -2,14 +2,12 @@ import { Bundle } from "../lib/simple-ecs";
 import type { JunkDrawerOfComponents } from "../types";
 import type { CombatComponents } from "./combat-feature";
 import type { EnemyComponents } from "./enemy-feature";
-import type { EntityTypeComponents } from "./entity-type-feature";
 import type { MovementComponents } from "./movement-feature";
 
 export
 interface HealthComponents extends
 	MovementComponents,
 	JunkDrawerOfComponents,
-	EntityTypeComponents,
 	CombatComponents,
 	EnemyComponents {
 	health: { current: number; max: number };

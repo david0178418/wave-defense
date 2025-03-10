@@ -1,12 +1,11 @@
 import { Sprite, Texture } from "pixi.js";
 import { Bundle  } from "../lib/simple-ecs";
-import { EntityType, type EntityTypeComponents } from "./entity-type-feature";
 import { DamageType, type CombatComponents } from "./combat-feature";
-import type { JunkDrawerOfResources } from "../types";
+import { EntityType, type JunkDrawerOfResources } from "../types";
 import type { JunkDrawerOfCollisionComponents } from "./collision-feature";
 
 export
-type EnemyComponents = EntityTypeComponents & CombatComponents & JunkDrawerOfCollisionComponents &{
+type EnemyComponents = CombatComponents & JunkDrawerOfCollisionComponents & {
 	enemy: true;
 }
 
@@ -128,7 +127,7 @@ function enemyFeature() {
 						// Choose enemy type based on current distribution
 						// More sophisticated logic: prefer types that are underrepresented
 						const randomValue = Math.random();
-						let enemyType = EntityType.ENEMY_BASIC;
+						let enemyType: EntityType = EntityType.ENEMY_BASIC;
 						
 						// Adjust probabilities based on current enemy distribution
 						const fastEnemyRatio = fastEnemyCount / Math.max(1, totalEnemies);

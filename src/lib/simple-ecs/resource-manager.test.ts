@@ -1,5 +1,7 @@
 import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
+import { createBundle } from './bundle';
+import { createSystem } from './system-builder';
 
 interface TestComponents {
 	position: { x: number; y: number };
@@ -75,49 +77,51 @@ describe('ResourceManager', () => {
 	test('should handle resources in ECS systems', () => {
 		const world = new SimpleECS<TestComponents, TestEvents, TestResources>();
 		
-		// Add resources
-		world.addResource('config', { debug: true, timeStep: 1/60 });
-		world.addResource('gameState', { current: 'game', score: 0 });
-		
-		// Create an entity
+		// Create an entity to work with
 		const entity = world.createEntity();
 		world.addComponent(entity.id, 'position', { x: 0, y: 0 });
 		
-		const processedEntities: any[] = [];
-		const accessedResources: Record<string, any> = {};
-		
-		world.addSystem(
-			world.createSystem('resource-system')
-				.addQuery('entities', {
-					with: ['position'],
-				})
-				.setProcess((queries, deltaTime, entityManager, resourceManager, eventBus) => {
-					processedEntities.push(...queries.entities);
-					
-					accessedResources['config'] = resourceManager.get('config');
-					accessedResources['gameState'] = resourceManager.get('gameState');
-					
-					if (accessedResources['config'].debug) {
+		// Create a bundle with resources and a system
+		const bundle = createBundle<TestComponents, TestEvents, TestResources>()
+			.addResource('config', { debug: true, timeStep: 1/60 })
+			.addResource('gameState', { current: 'playing', score: 0 })
+			.addSystem(
+				createSystem<TestComponents, TestEvents, TestResources>('ConfigAwareSystem')
+					.addQuery('entities', {
+						with: ['position']
+					})
+					.setProcess((queries, deltaTime, entityManager, resourceManager) => {
+						// Get resources
+						const config = resourceManager.get('config');
+						const gameState = resourceManager.get('gameState');
+						
+						// Use resources to update entities
 						for (const entity of queries.entities) {
-							entity.components.position.x += 10 * accessedResources['config'].timeStep;
+							// Move entity based on config timeStep
+							const position = entity.components.position;
+							position.x += 10 * (config?.timeStep || 0);
 							
-							const gameState = resourceManager.get('gameState');
-							gameState.score += 1;
+							// Update game state
+							if (gameState) {
+								gameState.score += 1;
+							}
 						}
-					}
-				})
-		);
+					})
+			);
 		
+		// Install the bundle
+		world.install(bundle);
+		
+		// Update the world to run the system
 		world.update(1);
 		
-		expect(accessedResources['config']).toEqual({ debug: true, timeStep: 1/60 });
-		expect(accessedResources['gameState'].current).toBe('game');
+		// Verify entity was updated with resource-driven logic
+		const position = world.getComponent(entity.id, 'position');
+		expect(position).toEqual({ x: 10 * (1/60), y: 0 });
 		
-		// The position should have been updated
-		expect(world.getComponent(entity.id, 'position')?.x).toBeCloseTo(10 * (1/60));
-		
-		// The score should have been incremented
-		expect(world.getResource('gameState').score).toBe(1);
+		// Verify resource was updated by the system
+		const gameState = world.resourceManager.get('gameState');
+		expect(gameState).toEqual({ current: 'playing', score: 1 });
 	});
 	
 	test('should support object and function resources', () => {
@@ -125,54 +129,67 @@ describe('ResourceManager', () => {
 		
 		// Add a logger resource with a function
 		let logMessage = '';
-		world.addResource('logger', {
-			log(message: string) {
-				logMessage = message;
-			}
-		});
 		
-		// Add a system that uses the logger
-		world.addSystem(
-			world.createSystem('logger-system')
-			.setProcess((queries, deltaTime, entityManager, resourceManager) => {
-				const logger = resourceManager.get('logger');
-				logger.log('System executed');
+		// Create a bundle with the logger resource
+		const bundle = createBundle<TestComponents, TestEvents, TestResources>()
+			.addResource('logger', { 
+				log: (message: string) => {
+					logMessage = message;
+				}
 			})
-		);
+			.addSystem(
+				createSystem<TestComponents, TestEvents, TestResources>('LoggingSystem')
+					.setProcess((_, __, ___, resourceManager) => {
+						// Use the logger resource
+						const logger = resourceManager.get('logger');
+						logger?.log('System executed');
+					})
+			);
 		
+		// Install the bundle
+		world.install(bundle);
+		
+		// Update the world to run the system
 		world.update(1);
 		
+		// Check that the logger function was called
 		expect(logMessage).toBe('System executed');
 	});
 	
 	test('should support resources in event handlers', () => {
 		const world = new SimpleECS<TestComponents, TestEvents, TestResources>();
 		
-		// Add resources
-		world.addResource('gameState', { current: 'game', score: 0 });
+		// Add resources to test with
+		let resourceUsed = false;
 		
-		// Add a system with an event handler that uses resources
-		world.addSystem(
-			world.createSystem('event-resource-system')
-			.setEventHandlers({
-				collision: {
-					handler(
-						data,
-						entityManager,
-						resourceManager,
-						eventBus,
-					) {
-						const gameState = resourceManager.get('gameState');
-						gameState.score += 10;
-					}
-				}
-			})
-		);
+		// Create a bundle with resources and a system with event handlers
+		const bundle = createBundle<TestComponents, TestEvents, TestResources>()
+			.addResource('config', { debug: true, timeStep: 1/60 })
+			.addSystem(
+				createSystem<TestComponents, TestEvents, TestResources>('ResourceUsingEventSystem')
+					.setEventHandlers({
+						collision: {
+							handler: (data, entityManager, resourceManager, eventBus) => {
+								// Access and use resources in event handler
+								const config = resourceManager.get('config');
+								if (config?.debug) {
+									resourceUsed = true;
+								}
+							}
+						}
+					})
+			);
 		
-		// Trigger the event
-		world.eventBus.publish('collision', { entity1Id: 1, entity2Id: 2 });
+		// Install the bundle
+		world.install(bundle);
 		
-		// Check that the resource was updated by the event handler
-		expect(world.getResource('gameState').score).toBe(10);
+		// Publish an event to trigger the handler
+		world.eventBus.publish('collision', { 
+			entity1Id: 1, 
+			entity2Id: 2 
+		});
+		
+		// Verify the resource was used in the event handler
+		expect(resourceUsed).toBe(true);
 	});
 });

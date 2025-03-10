@@ -1,7 +1,6 @@
 import { Bundle } from "../lib/simple-ecs";
-import type { JunkDrawerOfComponents, JunkDrawerOfEvents } from "../types";
+import { EntityType, type JunkDrawerOfComponents, type JunkDrawerOfEvents } from "../types";
 import type { CollisionEvents } from "./collision-feature";
-import { EntityType, type EntityTypeComponents } from "./entity-type-feature";
 import type { MovementComponents } from "./movement-feature";
 // Define damage types for different attack sources
 export
@@ -14,7 +13,7 @@ enum DamageType {
 
 export
 // gross
-interface CombatComponents extends MovementComponents, JunkDrawerOfComponents, EntityTypeComponents {
+interface CombatComponents extends MovementComponents, JunkDrawerOfComponents {
 	// Health component for any entity that can take damage
 	health: { 
 		current: number; 

@@ -1,7 +1,6 @@
-import { Bundle } from "../lib/simple-ecs";
+import { createBundle } from "../lib/simple-ecs";
 import type { JunkDrawerOfComponents } from "../types";
 import type { EnemyComponents } from "./enemy-feature";
-import { EntityType, type EntityTypeComponents } from "./entity-type-feature";
 import type { MovementComponents } from "./movement-feature";
 
 // Collision component interface
@@ -9,10 +8,9 @@ export
 // Gross
 interface CollisionComponents extends
 	MovementComponents,
-	EntityTypeComponents,
-	JunkDrawerOfComponents,
 	EnemyComponents,
-	JunkDrawerOfComponents {
+	JunkDrawerOfComponents,
+	JunkDrawerOfCollisionComponents {
 }
 
 export
@@ -40,15 +38,15 @@ interface CollisionEvents {
 	entityCollision: {
 		entityA: number;
 		entityB: number;
-		entityAType: EntityType;
-		entityBType: EntityType;
+		entityAType: JunkDrawerOfComponents['entityType']['type'];
+		entityBType: JunkDrawerOfComponents['entityType']['type'];
 		isNew: boolean; // Whether this is a new collision or ongoing
 	};
 }
 
 export default
 function collisionFeature() {
-	const feature = new Bundle<CollisionComponents, CollisionEvents>();
+	const feature = createBundle<CollisionComponents, CollisionEvents>();
 	
 	return feature
 		// Detect and process collisions between entities

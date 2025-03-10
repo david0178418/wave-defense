@@ -1,7 +1,6 @@
 import EntityManager from "./entity-manager";
 import EventBus from "./event-bus";
 import ResourceManager from "./resource-manager";
-import { createSystem, SystemBuilder } from "./system-builder";
 import type { System } from "./types";
 import type Bundle from "./bundle";
 
@@ -15,6 +14,7 @@ class SimpleECS<
 	private _systems: System<ComponentTypes, any, any, EventTypes, ResourceTypes>[] = [];
 	private _eventBus: EventBus<EventTypes>;
 	private _resourceManager: ResourceManager<ResourceTypes>;
+	private _installedBundles: Set<string> = new Set();
 
 	constructor() {
 		this._entityManager = new EntityManager<ComponentTypes>();
@@ -26,161 +26,228 @@ class SimpleECS<
 	 * Install a bundle into this ECS instance
 	 */
 	install<
-		B extends Record<string, any> = ComponentTypes,
-		E extends Record<string, any> = EventTypes,
-		R extends Record<string, any> = ResourceTypes
-	>(bundle: Bundle<B, E, R>) {
-		// Use the bundle's installInto method to install itself into this ECS
-		// We need to cast the types here since TypeScript can't fully track
-		// that B, E, and R are compatible with ComponentTypes, EventTypes, and ResourceTypes
-		return bundle.installInto(this as any as SimpleECS<B, E, R>);
-	}
-
-	addSystem(systemBuilder: SystemBuilder<ComponentTypes, EventTypes, ResourceTypes, any>) {
-		// Build the system first
-		const system = systemBuilder.build();
-		
-		// Add to systems list
-		this._systems.push(system);
-		
-		// Call onAttach if defined
-		if (system.onAttach) {
-			system.onAttach(
-				this._entityManager,
-				this._resourceManager,
-				this._eventBus,
-			);
+		B extends Record<string, any>,
+		E extends Record<string, any>,
+		R extends Record<string, any>
+	>(bundle: Bundle<B, E, R>): this {
+		// Check if this bundle is already installed
+		if (this._installedBundles.has(bundle.id)) {
+			console.warn(`Bundle ${bundle.id} is already installed`);
+			return this;
 		}
 		
-		// Auto-subscribe to events if eventHandlers are defined
-		if (system.eventHandlers) {
-			for (const eventName in system.eventHandlers) {
-				const handler = system.eventHandlers[eventName];
-				if (handler?.handler) {
-					// Create a wrapper that passes the additional parameters to the handler
-					const wrappedHandler = (data: any) => {
-						handler.handler(
-							data,
-							this._entityManager,
-							this._resourceManager,
-							this._eventBus,
-						);
-					};
-					
-					this._eventBus.subscribe(
-						eventName, 
-						wrappedHandler
-					);
+		// Register all systems from the bundle
+		for (const system of bundle.getSystems()) {
+			// Need to cast here because we can't fully type the system generics
+			const typedSystem = system as unknown as System<ComponentTypes, any, any, EventTypes, ResourceTypes>;
+			this._systems.push(typedSystem);
+			
+			// Call onAttach lifecycle hook if defined
+			if (typedSystem.onAttach) {
+				typedSystem.onAttach(
+					this._entityManager,
+					this._resourceManager,
+					this._eventBus
+				);
+			}
+			
+			// Auto-subscribe to events if eventHandlers are defined
+			if (typedSystem.eventHandlers) {
+				for (const eventName in typedSystem.eventHandlers) {
+					const handler = typedSystem.eventHandlers[eventName];
+					if (handler?.handler) {
+						// Create a wrapper that passes the additional parameters to the handler
+						const wrappedHandler = (data: any) => {
+							handler.handler(
+								data,
+								this._entityManager,
+								this._resourceManager,
+								this._eventBus
+							);
+						};
+						
+						this._eventBus.subscribe(eventName, wrappedHandler);
+					}
 				}
 			}
 		}
+		
+		// Register all resources from the bundle
+		const resources = bundle.getResources();
+		for (const [key, value] of resources.entries()) {
+			this._resourceManager.add(key as any, value);
+		}
+		
+		// Mark this bundle as installed
+		this._installedBundles.add(bundle.id);
 		
 		return this;
 	}
-	
-	removeSystem(systemLabel: string) {
-		const index = this._systems.findIndex(sys => sys.label === systemLabel);
-		if (index !== -1) {
-			const system = this._systems[index];
-			
-			system?.onDetach?.(
-				this._entityManager,
-				this._resourceManager,
-				this._eventBus,
-			);
-			
-			// We no longer need to manually unsubscribe events since
-			// we don't store unsubscribe functions anymore
-			
-			this._systems.splice(index, 1);
-			return true;
-		}
-		return false;
-	}
 
-	update(deltaTime: number) {
-		for (const system of this._systems) {
-			const queries: { [queryName: string]: any } = {};
-			
-			// TODO Caching
-			// Process each query defined in the system
-			if (system.entityQueries) {
-				for (const [queryName, queryConfig] of Object.entries(system.entityQueries)) {
-					const requiredComponents = queryConfig.with || [];
-					const excludedComponents = queryConfig.without || [];
-					
-					queries[queryName] = this._entityManager.getEntitiesWithComponents(
-						requiredComponents,
-						excludedComponents,
-					);
-				}
-			}
-			
-			system.process?.(
-				queries,
-				deltaTime,
-				this._entityManager,
-				this._resourceManager,
-				this._eventBus,
-			);
-		}
+	/**
+	 * Remove a system by its label
+	 */
+	removeSystem(label: string): boolean {
+		const index = this._systems.findIndex(system => system.label === label);
+		if (index === -1) return false;
+		
+		const system = this._systems[index];
+		if (!system) return false;
+		
+		system.onDetach?.(
+			this._entityManager,
+			this._resourceManager,
+			this._eventBus
+		);
+		
+		// Remove system
+		this._systems.splice(index, 1);
+		return true;
 	}
 	
-	get eventBus(): EventBus<EventTypes> {
-		return this._eventBus;
+	/**
+	 * Check if a resource exists
+	 */
+	hasResource<K extends keyof ResourceTypes>(key: K): boolean {
+		return this._resourceManager.has(key);
 	}
-
-	get resourceManager(): ResourceManager<ResourceTypes> {
-		return this._resourceManager;
-	}
-
+	
+	// Entity management methods
+	/**
+	 * Create a new entity
+	 */
 	createEntity() {
 		return this._entityManager.createEntity();
 	}
-
+	
+	/**
+	 * Remove an entity by ID
+	 */
 	removeEntity(entityId: number): boolean {
 		return this._entityManager.removeEntity(entityId);
 	}
-
-	addComponent<ComponentName extends keyof ComponentTypes>(
+	
+	/**
+	 * Add a component to an entity
+	 */
+	addComponent<K extends keyof ComponentTypes>(
 		entityId: number,
-		componentName: ComponentName,
-		data: ComponentTypes[ComponentName]
+		componentName: K,
+		componentData: ComponentTypes[K]
 	) {
-		this._entityManager.addComponent(entityId, componentName, data);
+		this._entityManager.addComponent(entityId, componentName, componentData);
 		return this;
 	}
-
-	removeComponent<ComponentName extends keyof ComponentTypes>(
-		entityId: number, 
-		componentName: ComponentName
-	) {
-		this._entityManager.removeComponent(entityId, componentName);
-		return this;
-	}
-
-	getComponent<ComponentName extends keyof ComponentTypes>(entityId: number, componentName: ComponentName): ComponentTypes[ComponentName] | null {
+	
+	/**
+	 * Get a component from an entity
+	 */
+	getComponent<K extends keyof ComponentTypes>(
+		entityId: number,
+		componentName: K
+	): ComponentTypes[K] | null {
 		return this._entityManager.getComponent(entityId, componentName);
 	}
-
-	addResource<K extends keyof ResourceTypes>(label: K, resource: ResourceTypes[K]) {
-		this._resourceManager.add(label, resource);
-		return this
+	
+	/**
+	 * Check if an entity has a component
+	 */
+	hasComponent<K extends keyof ComponentTypes>(
+		entityId: number,
+		componentName: K
+	): boolean {
+		const component = this._entityManager.getComponent(entityId, componentName);
+		return component !== null;
 	}
-
-	getResource<K extends keyof ResourceTypes>(label: K): ResourceTypes[K] {
-		return this._resourceManager.get(label);
+	
+	/**
+	 * Remove a component from an entity
+	 */
+	removeComponent<K extends keyof ComponentTypes>(
+		entityId: number,
+		componentName: K
+	): boolean {
+		try {
+			this._entityManager.removeComponent(entityId, componentName);
+			return true;
+		} catch (error) {
+			return false;
+		}
 	}
-
-	hasResource(label: string): boolean {
-		return this._resourceManager.has(label);
+	
+	/**
+	 * Get all entities with specific components
+	 */
+	getEntitiesWithComponents(
+		withComponents: (keyof ComponentTypes)[],
+		withoutComponents: (keyof ComponentTypes)[] = []
+	) {
+		return this._entityManager.getEntitiesWithComponents(
+			withComponents,
+			withoutComponents
+		);
 	}
-
-	removeResource(label: string): boolean {
-		return this._resourceManager.remove(label);
+	
+	/**
+	 * Update all systems
+	 */
+	update(deltaTime: number) {
+		for (const system of this._systems) {
+			if (!system.process) continue;
+			
+			// Prepare query results
+			const queryResults: any = {};
+			
+			// Process entity queries if defined
+			if (system.entityQueries) {
+				for (const queryName in system.entityQueries) {
+					const query = system.entityQueries[queryName];
+					if (query) {
+						queryResults[queryName] = this._entityManager.getEntitiesWithComponents(
+							query.with,
+							query.without || []
+						);
+					}
+				}
+				
+				// Call the system's process method
+				system.process(
+					queryResults,
+					deltaTime,
+					this._entityManager,
+					this._resourceManager,
+					this._eventBus
+				);
+			} else {
+				// No queries defined, pass an empty array
+				system.process(
+					[],
+					deltaTime,
+					this._entityManager,
+					this._resourceManager,
+					this._eventBus
+				);
+			}
+		}
 	}
-
-	createSystem(label: string): SystemBuilder<ComponentTypes, EventTypes, ResourceTypes> {
-		return createSystem<ComponentTypes, EventTypes, ResourceTypes>(label);
+	
+	// Getters for the internal managers
+	get entityManager() {
+		return this._entityManager;
+	}
+	
+	get eventBus() {
+		return this._eventBus;
+	}
+	
+	get resourceManager() {
+		return this._resourceManager;
+	}
+	
+	/**
+	 * Get all installed bundle IDs
+	 */
+	get installedBundles(): string[] {
+		return Array.from(this._installedBundles);
 	}
 }

@@ -1,5 +1,5 @@
+import type { System } from './types';
 import { SystemBuilder, createSystem } from './system-builder';
-import type SimpleECS from './simple-ecs';
 
 /**
  * Bundle class that encapsulates a set of components, resources, events, and systems
@@ -12,6 +12,26 @@ export default class Bundle<
 > {
 	private _systems: SystemBuilder<ComponentTypes, EventTypes, ResourceTypes, any>[] = [];
 	private _resources: Map<keyof ResourceTypes, any> = new Map();
+	private _id: string;
+
+	constructor(id?: string) {
+		this._id = id || `bundle_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+	}
+
+	/**
+	 * Get the unique ID of this bundle
+	 */
+	get id(): string {
+		return this._id;
+	}
+
+	/**
+	 * Set the ID of this bundle
+	 * @internal Used by combineBundles
+	 */
+	set id(value: string) {
+		this._id = value;
+	}
 
 	/**
 	 * Helper method to create a properly typed SystemBuilder for this bundle
@@ -39,20 +59,26 @@ export default class Bundle<
 	}
 
 	/**
-	 * Install this bundle into an ECS instance
+	 * Get all systems defined in this bundle
+	 * Returns built System objects instead of SystemBuilders
 	 */
-	installInto(ecs: SimpleECS<ComponentTypes, EventTypes, ResourceTypes>) {
-		// Add all systems
-		for (const system of this._systems) {
-			ecs.addSystem(system);
-		}
+	getSystems(): System<ComponentTypes, any, any, EventTypes, ResourceTypes>[] {
+		return this._systems.map(builder => builder.build());
+	}
 
-		// Add all resources
-		for (const [label, resource] of this._resources.entries()) {
-			ecs.addResource(label as keyof ResourceTypes, resource);
-		}
+	/**
+	 * Get all resources defined in this bundle
+	 */
+	getResources(): Map<keyof ResourceTypes, any> {
+		return new Map(this._resources);
+	}
 
-		return ecs;
+	/**
+	 * Get the system builders for internal use
+	 * @internal
+	 */
+	getSystemBuilders(): SystemBuilder<ComponentTypes, EventTypes, ResourceTypes, any>[] {
+		return [...this._systems];
 	}
 }
 
@@ -63,8 +89,8 @@ export function createBundle<
 	ComponentTypes extends Record<string, any> = Record<string, any>,
 	EventTypes extends Record<string, any> = Record<string, any>,
 	ResourceTypes extends Record<string, any> = Record<string, any>
->() {
-	return new Bundle<ComponentTypes, EventTypes, ResourceTypes>();
+>(id?: string) {
+	return new Bundle<ComponentTypes, EventTypes, ResourceTypes>(id);
 }
 
 /**
@@ -92,37 +118,75 @@ export function combineBundle<
 	R2 extends Record<string, any>
 >(
 	bundle1: Bundle<C1, E1, R1>,
-	bundle2: Bundle<C2, E2, R2>
+	bundle2: Bundle<C2, E2, R2>,
+	id?: string
 ): Bundle<Merge<C1, C2>, Merge<E1, E2>, Merge<R1, R2>> {
-	// We need to cast here as TypeScript can't fully track the combined types
-	const combined = new Bundle<Merge<C1, C2>, Merge<E1, E2>, Merge<R1, R2>>();
-
-	// Install bundle1 and bundle2 systems and resources into the combined bundle
-	// This is a simplification - in a full implementation we would need to directly
-	// access the private members or add methods to expose them
-	
-	// For the purposes of this example, we're going to use "any" casts
-	// A more complete implementation would provide proper accessors
-	const b1 = bundle1 as any;
-	const b2 = bundle2 as any;
+	// Create a new bundle with the merged types
+	const combined = new Bundle<Merge<C1, C2>, Merge<E1, E2>, Merge<R1, R2>>(
+		id || `combined_${bundle1.id}_${bundle2.id}`
+	);
 	
 	// Copy systems from both bundles
-	for (const system of b1._systems) {
-		combined.addSystem(system);
+	for (const system of bundle1.getSystemBuilders()) {
+		combined.addSystem(system as any);
 	}
 	
-	for (const system of b2._systems) {
-		combined.addSystem(system);
+	for (const system of bundle2.getSystemBuilders()) {
+		combined.addSystem(system as any);
 	}
 	
-	// Copy resources from both bundles
-	for (const [label, resource] of b1._resources.entries()) {
-		combined.addResource(label, resource);
+	// Copy resources from both bundles (bundle2 takes precedence for conflicts)
+	for (const [label, resource] of bundle1.getResources().entries()) {
+		combined.addResource(label as any, resource);
 	}
 	
-	for (const [label, resource] of b2._resources.entries()) {
-		combined.addResource(label, resource);
+	for (const [label, resource] of bundle2.getResources().entries()) {
+		combined.addResource(label as any, resource);
 	}
 	
 	return combined;
+}
+
+/**
+ * Combine any number of bundles into a single bundle
+ */
+export function combineBundles<
+	C extends Record<string, any>,
+	E extends Record<string, any>,
+	R extends Record<string, any>
+>(bundles: Array<Bundle<C, E, R>>, id?: string): Bundle<C, E, R> {
+	if (bundles.length === 0) {
+		return createBundle<C, E, R>(id || 'empty_combined_bundle');
+	}
+	
+	if (bundles.length === 1 && bundles[0]) {
+		const bundle = bundles[0];
+		if (id) {
+			bundle.id = id;
+		}
+		return bundle;
+	}
+	
+	// If we have invalid bundles, create a new empty one with the given ID
+	if (!bundles[0]) {
+		return createBundle<C, E, R>(id || 'fallback_bundle');
+	}
+	
+	// Start with the first bundle
+	let result = bundles[0];
+	
+	// Combine with each additional bundle
+	for (let i = 1; i < bundles.length; i++) {
+		const nextBundle = bundles[i];
+		if (nextBundle) {
+			result = combineBundle(result, nextBundle);
+		}
+	}
+	
+	// Set ID if provided
+	if (id) {
+		result.id = id;
+	}
+	
+	return result;
 } 

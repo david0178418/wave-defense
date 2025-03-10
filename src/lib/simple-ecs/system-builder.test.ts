@@ -1,5 +1,7 @@
 import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
+import { createBundle } from './bundle';
+import { createSystem } from './system-builder';
 
 // Define some test component types for the ECS
 interface TestComponents {
@@ -27,18 +29,23 @@ describe('SystemBuilder', () => {
 		
 		const processedEntities: number[] = [];
 		
-		const system = world.createSystem('movement')
-			.addQuery('entities', {
-				with: ['position', 'velocity'],
-				without: [],
-			})
-			.setProcess((queries) => {
-				for (const entity of queries.entities) {
-					processedEntities.push(entity.id);
-				}
-			});
+		// Create a bundle with the system
+		const bundle = createBundle<TestComponents>()
+			.addSystem(
+				createSystem<TestComponents>('movement')
+					.addQuery('entities', {
+						with: ['position', 'velocity'],
+						without: [],
+					})
+					.setProcess((queries) => {
+						for (const entity of queries.entities) {
+							processedEntities.push(entity.id);
+						}
+					})
+			);
 		
-		world.addSystem(system);
+		// Install the bundle
+		world.install(bundle);
 		world.update(1/60);
 		
 		expect(processedEntities).toEqual([entity1.id]);
@@ -66,24 +73,29 @@ describe('SystemBuilder', () => {
 		const processedMovingEntities: number[] = [];
 		const processedCollidingEntities: number[] = [];
 		
-		const system = world.createSystem('multiQuery')
-			.addQuery('movingEntities', {
-				with: ['position', 'velocity'],
-			})
-			.addQuery('collidingEntities', {
-				with: ['position', 'collision'],
-			})
-			.setProcess((queries) => {
-				for (const entity of queries.movingEntities) {
-					processedMovingEntities.push(entity.id);
-				}
-				
-				for (const entity of queries.collidingEntities) {
-					processedCollidingEntities.push(entity.id);
-				}
-			});
+		// Create a bundle with the system
+		const bundle = createBundle<TestComponents>()
+			.addSystem(
+				createSystem<TestComponents>('multiQuery')
+					.addQuery('movingEntities', {
+						with: ['position', 'velocity'],
+					})
+					.addQuery('collidingEntities', {
+						with: ['position', 'collision'],
+					})
+					.setProcess((queries) => {
+						for (const entity of queries.movingEntities) {
+							processedMovingEntities.push(entity.id);
+						}
+						
+						for (const entity of queries.collidingEntities) {
+							processedCollidingEntities.push(entity.id);
+						}
+					})
+			);
 		
-		world.addSystem(system);
+		// Install the bundle
+		world.install(bundle);
 		world.update(1/60);
 		
 		expect(processedMovingEntities).toEqual([entity1.id, entity3.id]);
@@ -96,16 +108,20 @@ describe('SystemBuilder', () => {
 		let onAttachCalled = false;
 		let onDetachCalled = false;
 		
-		const system = world.createSystem('lifecycle')
-			.setOnAttach(() => {
-				onAttachCalled = true;
-			})
-			.setOnDetach(() => {
-				onDetachCalled = true;
-			});
+		// Create a bundle with the system that has lifecycle hooks
+		const bundle = createBundle<TestComponents>()
+			.addSystem(
+				createSystem<TestComponents>('lifecycle')
+					.setOnAttach(() => {
+						onAttachCalled = true;
+					})
+					.setOnDetach(() => {
+						onDetachCalled = true;
+					})
+			);
 		
-		// Adding the system should call onAttach
-		world.addSystem(system);
+		// Installing the bundle should call onAttach
+		world.install(bundle);
 		expect(onAttachCalled).toBe(true);
 		
 		// Removing the system should call onDetach
@@ -130,23 +146,28 @@ describe('SystemBuilder', () => {
 		let sumX = 0;
 		let sumY = 0;
 		
-		const system = world.createSystem('staticObjects')
-			.addQuery('objects', {
-				with: ['position', 'velocity'],
-				without: [],
-			})
-			.setProcess((queries) => {
-				// TypeScript should know that position and velocity are guaranteed to exist
-				for (const entity of queries.objects) {
-					sumX += entity.components.position.x + entity.components.velocity.x;
-					sumY += entity.components.position.y + entity.components.velocity.y;
-					
-					// Directly accessing a component that's not in the 'with' array would cause a type error
-					// This line would fail to compile: entity.components.health.value
-				}
-			});
+		// Create a bundle with the system
+		const bundle = createBundle<TestComponents>()
+			.addSystem(
+				createSystem<TestComponents>('staticObjects')
+					.addQuery('objects', {
+						with: ['position', 'velocity'],
+						without: [],
+					})
+					.setProcess((queries) => {
+						// TypeScript should know that position and velocity are guaranteed to exist
+						for (const entity of queries.objects) {
+							sumX += entity.components.position.x + entity.components.velocity.x;
+							sumY += entity.components.position.y + entity.components.velocity.y;
+							
+							// Directly accessing a component that's not in the 'with' array would cause a type error
+							// This line would fail to compile: entity.components.health.value
+						}
+					})
+			);
 		
-		world.addSystem(system);
+		// Install the bundle
+		world.install(bundle);
 		world.update(1/60);
 		
 		expect(sumX).toBe(15); // 10+5 from entity1, 0+0 from entity2

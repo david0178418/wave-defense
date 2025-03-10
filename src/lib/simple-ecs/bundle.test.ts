@@ -1,7 +1,6 @@
-import { expect, describe, test, spyOn } from 'bun:test';
+import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
 import Bundle, { createBundle, combineBundle } from './bundle';
-import { SystemBuilder } from './system-builder';
 
 // Define test component and resource types
 interface PositionComponents {
@@ -37,30 +36,29 @@ describe('Bundle', () => {
 		const system = bundle.createSystem('test');
 		bundle.addSystem(system);
 		
-		// This is a simplification - in a real-world scenario we would have a getter
-		// to access the systems array, or we would test the system by installing the bundle
-		// and checking if the system was added to the world
-		const bundleAny = bundle as any;
-		expect(bundleAny._systems.length).toBe(1);
-		expect(bundleAny._systems[0].label).toBe('test');
+		// Verify systems were added by checking the built systems
+		const systems = bundle.getSystems();
+		expect(systems.length).toBe(1);
+		expect(systems[0]?.label).toBe('test');
 	});
 
 	test('should add resources to the bundle', () => {
 		const bundle = createBundle<PositionComponents, {}, PositionResources>();
 		bundle.addResource('gravity', { value: 9.8 });
 		
-		// Similar to the systems test, we're accessing private fields for testing
-		const bundleAny = bundle as any;
-		expect(bundleAny._resources.size).toBe(1);
-		expect(bundleAny._resources.get('gravity')).toEqual({ value: 9.8 });
+		// Verify resources were added
+		const resources = bundle.getResources();
+		expect(resources.size).toBe(1);
+		expect(resources.get('gravity')).toEqual({ value: 9.8 });
 	});
 
 	test('should install a bundle into a SimpleECS instance', () => {
-		// Create a world and spy on its methods
+		// Create a world
 		const world = new SimpleECS<PositionComponents, {}, PositionResources>();
 		
-		// Create the system builder directly
-		const systemBuilder = world.createSystem('movement')
+		// Create a bundle and system builder within that bundle
+		const tempBundle = createBundle<PositionComponents, {}, PositionResources>();
+		const systemBuilder = tempBundle.createSystem('movement')
 			.addQuery('movingEntities', { 
 				with: ['position', 'velocity']
 			})
@@ -68,43 +66,42 @@ describe('Bundle', () => {
 				// Dummy process function
 			});
 		
-		// Create and configure a bundle
+		// Create another bundle to actually install
 		const bundle = createBundle<PositionComponents, {}, PositionResources>()
-			.addSystem(systemBuilder as SystemBuilder<PositionComponents, {}, PositionResources>)
+			.addSystem(systemBuilder)
 			.addResource('gravity', { value: 9.8 });
 		
-		const addSystemSpy = spyOn(world, 'addSystem');
-		const addResourceSpy = spyOn(world, 'addResource');
-		
 		// Install the bundle
-		bundle.installInto(world);
+		world.install(bundle);
 		
-		// Verify that the world methods were called correctly
-		expect(addSystemSpy).toHaveBeenCalledTimes(1);
-		expect(addResourceSpy).toHaveBeenCalledTimes(1);
-		expect(addResourceSpy).toHaveBeenCalledWith('gravity', { value: 9.8 });
+		// Verify the bundle was installed by checking for the resource
+		expect(world.hasResource('gravity')).toBe(true);
+		expect(world.resourceManager.get('gravity')).toEqual({ value: 9.8 });
+		
+		// Verify the bundle ID is in the installed bundles
+		expect(world.installedBundles).toContain(bundle.id);
 	});
 
 	test('should handle a world installing a bundle with the install method', () => {
-		const bundle = createBundle<PositionComponents, {}, PositionResources>()
+		const bundle = createBundle<PositionComponents, {}, PositionResources>('test-bundle')
 			.addResource('gravity', { value: 9.8 });
 			
 		const world = new SimpleECS<PositionComponents, {}, PositionResources>();
-		const installIntoSpy = spyOn(bundle, 'installInto');
 		
 		world.install(bundle);
 		
-		expect(installIntoSpy).toHaveBeenCalledTimes(1);
-		expect(installIntoSpy).toHaveBeenCalledWith(world);
+		// Verify the bundle was installed by checking the installed bundles
+		expect(world.installedBundles).toContain('test-bundle');
+		expect(world.hasResource('gravity')).toBe(true);
 	});
 
 	test('should combine two bundles with combineBundle', () => {
-		// Create worlds to get properly typed system builders
-		const physicsWorld = new SimpleECS<PositionComponents, {}, PositionResources>();
-		const playerWorld = new SimpleECS<PlayerComponents, {}, PlayerResources>();
+		// Create bundles to get properly typed system builders
+		const physicsBundle = createBundle<PositionComponents, {}, PositionResources>();
+		const playerBundle = createBundle<PlayerComponents, {}, PlayerResources>();
 		
-		// Create system builders
-		const physicsSystem = physicsWorld.createSystem('physics')
+		// Create system builders using the bundles
+		const physicsSystem = physicsBundle.createSystem('physics')
 			.addQuery('movingEntities', { 
 				with: ['position', 'velocity']
 			})
@@ -112,7 +109,7 @@ describe('Bundle', () => {
 				// Dummy process function
 			});
 			
-		const playerSystem = playerWorld.createSystem('player')
+		const playerSystem = playerBundle.createSystem('player')
 			.addQuery('players', { 
 				with: ['player', 'health']
 			})
@@ -120,34 +117,32 @@ describe('Bundle', () => {
 				// Dummy process function
 			});
 		
-		// Create the physics bundle
-		const physicsBundle = createBundle<PositionComponents, {}, PositionResources>()
+		// Create the physics bundle with its system
+		const physicsConfigBundle = createBundle<PositionComponents, {}, PositionResources>('physics')
 			.addResource('gravity', { value: 9.8 })
-			.addSystem(physicsSystem as SystemBuilder<PositionComponents, {}, PositionResources>);
+			.addSystem(physicsSystem);
 			
-		// Create the player bundle
-		const playerBundle = createBundle<PlayerComponents, {}, PlayerResources>()
+		// Create the player bundle with its system
+		const playerConfigBundle = createBundle<PlayerComponents, {}, PlayerResources>('player')
 			.addResource('playerControls', { up: false, down: false, left: false, right: false })
-			.addSystem(playerSystem as SystemBuilder<PlayerComponents, {}, PlayerResources>);
+			.addSystem(playerSystem);
 			
 		// Combine the bundles
-		const gameBundle = combineBundle(physicsBundle, playerBundle);
+		const gameBundle = combineBundle(physicsConfigBundle, playerConfigBundle, 'game');
 		
 		// Check that the combined bundle has the systems and resources from both bundles
-		const gameBundleAny = gameBundle as any;
-		expect(gameBundleAny._systems.length).toBe(2);
-		expect(gameBundleAny._resources.size).toBe(2);
-		expect(gameBundleAny._resources.has('gravity')).toBe(true);
-		expect(gameBundleAny._resources.has('playerControls')).toBe(true);
+		expect(gameBundle.getSystems().length).toBe(2);
+		expect(gameBundle.getResources().size).toBe(2);
+		expect(gameBundle.getResources().has('gravity')).toBe(true);
+		expect(gameBundle.getResources().has('playerControls')).toBe(true);
 		
 		// Install the combined bundle into a world
 		const world = new SimpleECS<GameComponents, {}, GameResources>();
-		const addSystemSpy = spyOn(world, 'addSystem');
-		const addResourceSpy = spyOn(world, 'addResource');
 		
-		gameBundle.installInto(world);
-		
-		expect(addSystemSpy).toHaveBeenCalledTimes(2);
-		expect(addResourceSpy).toHaveBeenCalledTimes(2);
+		// Install and verify bundle was successfully installed
+		world.install(gameBundle);
+		expect(world.installedBundles).toContain('game');
+		expect(world.hasResource('gravity')).toBe(true);
+		expect(world.hasResource('playerControls')).toBe(true);
 	});
 }); 

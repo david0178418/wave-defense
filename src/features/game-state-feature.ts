@@ -1,7 +1,6 @@
 import { Application, Sprite, Texture, Container, Graphics, Text } from "pixi.js";
 import { Bundle } from "../lib/simple-ecs";
-import type { JunkDrawerOfComponents, JunkDrawerOfEvents } from "../types";
-import { EntityType } from "./entity-type-feature";
+import { EntityType, type JunkDrawerOfComponents, type JunkDrawerOfEvents } from "../types";
 import { DamageType, type CombatComponents } from "./combat-feature";
 import type { CollisionComponents, JunkDrawerOfCollisionComponents } from "./collision-feature";
 
