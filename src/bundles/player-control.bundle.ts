@@ -1,5 +1,5 @@
 import { Bundle } from "../lib/simple-ecs";
-import type { Acceleration, Speed } from "./movement-feature";
+import type { Acceleration, Speed } from "./movement.bundle";
 
 interface Components {
 	player: true;
@@ -21,7 +21,7 @@ interface ActiveControlMap {
 }
 
 export default
-function playerControlFeature() {
+function playerControlBundle() {
 	return new Bundle<Components, {}, Resources>()
 	.addResource('activeKeyMap', keyMap())
 		.addSystem('player-control')

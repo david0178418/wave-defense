@@ -10,7 +10,7 @@ interface Components {
 }
 
 export default
-function movementFeature() {
+function movementBundle() {
 	return new Bundle<Components>()
 		.addSystem('movement-system')
 		.addQuery('positionEntities', {

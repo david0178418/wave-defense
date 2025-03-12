@@ -1,8 +1,8 @@
 import type { Sprite } from "pixi.js";
 import { Bundle } from "../lib/simple-ecs";
 import { EntityClassification, type GameOver } from "../types";
-import type { EntityCollision } from "./collision-feature";
-import type { Invincible } from "./health-feature";
+import type { EntityCollision } from "./collision.bundle";
+import type { Invincible } from "./health.bundle";
 
 export
 enum DamageType {
@@ -73,7 +73,7 @@ interface Events {
 }
 
 export default
-function combatFeature() {
+function combatBundle() {
 	return new Bundle<Components, Events>()
 		// Process damage application
 		.addSystem('damage-dealing')

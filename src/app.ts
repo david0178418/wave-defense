@@ -1,11 +1,11 @@
 import SimpleECS from "./lib/simple-ecs";
-import movementFeature from "./features/movement-feature";
-import playerControlFeature from "./features/player-control-feature";
-import enemyFeature from "./features/enemy-feature";
-import healthFeature from "./features/health-feature";
-import gameStateFeature from "./features/game-state-feature";
-import combatFeature from "./features/combat-feature";
-import collisionFeature from "./features/collision-feature";
+import movementBundle from "./bundles/movement.bundle";
+import playerControlBundle from "./bundles/player-control.bundle";
+import enemyBundle from "./bundles/enemy.bundle";
+import healthBundle from "./bundles/health.bundle";
+import gameStateBundle from "./bundles/game-state.bundle";
+import combatBundle from "./bundles/combat.bundle";
+import collisionBundle from "./bundles/collision.bundle";
 import type { ConfigResource } from "./types";
 
 interface Resources {
@@ -29,13 +29,13 @@ game
 		deadzonePercentWidth: 0.2,
 		deadzonePercentHeight: 0.2,
 	})
-	.install(combatFeature())
-	.install(collisionFeature())
-	.install(movementFeature())
-	.install(playerControlFeature())
-	.install(enemyFeature())
-	.install(healthFeature())
-	.install(gameStateFeature());
+	.install(combatBundle())
+	.install(collisionBundle())
+	.install(movementBundle())
+	.install(playerControlBundle())
+	.install(enemyBundle())
+	.install(healthBundle())
+	.install(gameStateBundle());
 
 game.eventBus.publish('initializeGame', {
 	game,

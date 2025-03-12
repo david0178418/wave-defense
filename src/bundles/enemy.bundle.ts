@@ -1,11 +1,11 @@
 import { Container, Sprite, Texture } from "pixi.js";
 import { Bundle  } from "../lib/simple-ecs";
-import { DamageType, type DamageDealer } from "./combat-feature";
+import { DamageType, type DamageDealer } from "./combat.bundle";
 import { EntityClassification, type ConfigResource, type EntityType } from "../types";
-import type { MaxVelocity, Position, Velocity } from "./movement-feature";
-import type { Drag } from "./movement-feature";
-import type { Health } from "./health-feature";
-import type { Hitbox } from "./collision-feature";
+import type { MaxVelocity, Position, Velocity } from "./movement.bundle";
+import type { Drag } from "./movement.bundle";
+import type { Health } from "./health.bundle";
+import type { Hitbox } from "./collision.bundle";
 
 interface Components {
 	enemy: true;
@@ -73,7 +73,7 @@ const ENEMY_STATS: Record<EntityClassification, EnemyStats> = {
 };
 
 export default
-function enemyFeature() {
+function enemyBundle() {
 	return new Bundle<Components, {}, Resources>()
 		.addSystem('enemy-spawning')
 		.addQuery('basicEnemies', {

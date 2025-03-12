@@ -1,7 +1,7 @@
 import type { Sprite } from "pixi.js";
 import { Bundle } from "../lib/simple-ecs";
 import type { EntityType } from "../types";
-import type { Position, Velocity } from "./movement-feature";
+import type { Position, Velocity } from "./movement.bundle";
 
 export
 interface Health {
@@ -27,7 +27,7 @@ interface Components {
 }
 
 export default
-function healthFeature() {
+function healthBundle() {
 	return new Bundle<Components>()
 		.addSystem('player-enemy-collision')
 		.addQuery('players', {

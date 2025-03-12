@@ -1,10 +1,10 @@
 import { Application, Sprite, Texture, Container, Graphics, Text } from "pixi.js";
 import { Bundle } from "../lib/simple-ecs";
 import { EntityClassification, type EntityType, type GameOver, type initializeMap, type initializePlayer } from "../types";
-import { DamageType, type Defense } from "./combat-feature";
-import type { Position, Acceleration, Drag, MaxVelocity, Speed, Velocity } from "./movement-feature";
-import type { Health, Invincible } from "./health-feature";
-import type { Hitbox } from "./collision-feature";
+import { DamageType, type Defense } from "./combat.bundle";
+import type { Position, Acceleration, Drag, MaxVelocity, Speed, Velocity } from "./movement.bundle";
+import type { Health, Invincible } from "./health.bundle";
+import type { Hitbox } from "./collision.bundle";
 import type { InitializeGame } from "../app";
 
 interface Components {
@@ -34,7 +34,7 @@ interface Events {
 }
 
 export default
-function gameStateFeature() {
+function gameStateBundle() {
 	return new Bundle<Components, Events>()
 		.addSystem('initialize-game')
 		.setEventHandlers({

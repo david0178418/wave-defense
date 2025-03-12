@@ -1,9 +1,9 @@
 import { Bundle } from "../lib/simple-ecs";
 import type { EntityClassification, EntityType } from "../types";
-import type { Position } from "./movement-feature";
+import type { Position } from "./movement.bundle";
 
 export default
-function collisionFeature() {
+function collisionBundle() {
 	return new Bundle<Components, Events>()
 		// Detect and process collisions between entities
 		.addSystem('collision-detection')
