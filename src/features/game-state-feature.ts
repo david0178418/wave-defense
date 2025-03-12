@@ -1,10 +1,11 @@
 import { Application, Sprite, Texture, Container, Graphics, Text } from "pixi.js";
 import { Bundle } from "../lib/simple-ecs";
-import { EntityClassification, type EntityType, type GameOver, type InitializeGame, type initializeMap, type initializePlayer } from "../types";
+import { EntityClassification, type EntityType, type GameOver, type initializeMap, type initializePlayer } from "../types";
 import { DamageType, type Defense } from "./combat-feature";
 import type { Position, Acceleration, Drag, MaxVelocity, Speed, Velocity } from "./movement-feature";
 import type { Health, Invincible } from "./health-feature";
 import type { Hitbox } from "./collision-feature";
+import type { InitializeGame } from "../app";
 
 interface Components {
 	player: true;
@@ -33,12 +34,12 @@ interface Events {
 }
 
 export default
-function gameStateFeature(game: any) {
+function gameStateFeature() {
 	return new Bundle<Components, Events>()
 		.addSystem('initialize-game')
 		.setEventHandlers({
 			initializeGame: {
-				async handler(data, entityManager, resourceManager, eventBus) {
+				async handler({ game }, entityManager, resourceManager, eventBus) {
 					console.log("Initializing game");
 					const pixi = new Application();
 

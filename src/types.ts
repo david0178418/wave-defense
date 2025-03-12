@@ -17,7 +17,6 @@ const EntityClassification = {
 export
 type EntityClassification = typeof EntityClassification[keyof typeof EntityClassification];
 
-export type InitializeGame = {};
 export type initializeMap = {};
 export type initializePlayer = {};
 export type GameOver = {};
