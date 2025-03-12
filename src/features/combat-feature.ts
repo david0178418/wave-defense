@@ -3,13 +3,12 @@ import { Bundle } from "../lib/simple-ecs";
 import { EntityClassification, type GameOver } from "../types";
 import type { EntityCollision } from "./collision-feature";
 import type { Invincible } from "./health-feature";
-// Define damage types for different attack sources
+
 export
 enum DamageType {
 	PHYSICAL = 'physical',
 	PROJECTILE = 'projectile',
 	ENVIRONMENTAL = 'environmental',
-	// Add more as needed
 }
 
 export
