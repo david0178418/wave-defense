@@ -1,5 +1,44 @@
 import { Bundle } from "../lib/simple-ecs";
 
+export
+type Frozen = true;
+
+export
+interface Acceleration {
+	x: number;
+	y: number;
+}
+
+export
+interface Drag {
+	x: number;
+	y: number;
+}
+
+export
+interface Position {
+	x: number;
+	y: number;
+}
+
+export
+interface Velocity {
+	x: number;
+	y: number;
+}
+
+export
+interface Speed {
+	x: number;
+	y: number;
+}
+
+export
+interface MaxVelocity {
+	x: number;
+	y: number;
+}
+
 interface Components {
 	frozen: Frozen;
 	position: Position;
@@ -55,43 +94,4 @@ function movementBundle() {
 			}
 		})
 		.bundle;
-}
-
-export
-type Frozen = true;
-
-export
-interface Acceleration {
-	x: number;
-	y: number;
-}
-
-export
-interface Drag {
-	x: number;
-	y: number;
-}
-
-export
-interface Position {
-	x: number;
-	y: number;
-}
-
-export
-interface Velocity {
-	x: number;
-	y: number;
-}
-
-export
-interface Speed {
-	x: number;
-	y: number;
-}
-
-export
-interface MaxVelocity {
-	x: number;
-	y: number;
 }

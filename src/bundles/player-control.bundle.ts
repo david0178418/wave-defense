@@ -23,7 +23,7 @@ interface ActiveControlMap {
 export default
 function playerControlBundle() {
 	return new Bundle<Components, {}, Resources>()
-	.addResource('activeKeyMap', keyMap())
+		.addResource('activeKeyMap', keyMap())
 		.addSystem('player-control')
 		.addQuery('players', {
 			with: ['acceleration', 'speed', 'player']
