@@ -17,7 +17,7 @@ export default class Bundle<
 	ResourceTypes extends Record<string, any> = Record<string, any>,
 > {
 	private _systems: SystemBuilder<ComponentTypes, EventTypes, ResourceTypes, any>[] = [];
-	private _resources: Map<keyof ResourceTypes, any> = new Map();
+	private _resources: Map<keyof ResourceTypes, ResourceTypes[keyof ResourceTypes]> = new Map();
 	private _id: string;
 	
 	constructor(id?: string) {
@@ -52,6 +52,8 @@ export default class Bundle<
 
 	/**
 	 * Add a resource to this bundle
+	 * @param label The resource key
+	 * @param resource The resource value
 	 */
 	addResource<K extends keyof ResourceTypes>(label: K, resource: ResourceTypes[K]) {
 		this._resources.set(label, resource);
@@ -69,16 +71,33 @@ export default class Bundle<
 	/**
 	 * Get all resources defined in this bundle
 	 */
-	getResources(): Map<keyof ResourceTypes, any> {
+	getResources(): Map<keyof ResourceTypes, ResourceTypes[keyof ResourceTypes]> {
 		return new Map(this._resources);
 	}
 
-	getResource<K extends keyof ResourceTypes>(key: K): ResourceTypes[K] {
-		return this._resources.get(key);
+	/**
+	 * Get a specific resource by key
+	 * @param key The resource key
+	 * @returns The resource value or undefined if not found
+	 */
+	getResource<K extends keyof ResourceTypes>(key: K): ResourceTypes[K] | undefined {
+		return this._resources.get(key) as ResourceTypes[K] | undefined;
 	}
 
+	/**
+	 * Get all system builders in this bundle
+	 */
 	getSystemBuilders(): SystemBuilder<ComponentTypes, EventTypes, ResourceTypes, any>[] {
 		return [...this._systems];
+	}
+
+	/**
+	 * Check if this bundle has a specific resource
+	 * @param key The resource key to check
+	 * @returns True if the resource exists
+	 */
+	hasResource<K extends keyof ResourceTypes>(key: K): boolean {
+		return this._resources.has(key);
 	}
 }
 

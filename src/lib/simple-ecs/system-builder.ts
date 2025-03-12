@@ -173,8 +173,8 @@ type QueryResults<
 
 type ProcessFunction<
 	ComponentTypes,
-	EventTypes,
-	ResourceTypes,
+	EventTypes extends Record<string, any>,
+	ResourceTypes extends Record<string, any>,
 	Queries extends Record<string, QueryDefinition<ComponentTypes>>,
 	WithComp extends keyof ComponentTypes = any,
 	WithoutComp extends keyof ComponentTypes = any,
@@ -188,8 +188,8 @@ type ProcessFunction<
 
 type LifecycleFunction<
 	ComponentTypes,
-	EventTypes,
-	ResourceTypes,
+	EventTypes extends Record<string, any>,
+	ResourceTypes extends Record<string, any>,
 > = (
 	entityManager: EntityManager<ComponentTypes>,
 	resourceManager: ResourceManager<ResourceTypes>,

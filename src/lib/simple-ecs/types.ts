@@ -41,8 +41,8 @@ interface System<
 	ComponentTypes,
 	WithComponents extends keyof ComponentTypes = never,
 	WithoutComponents extends keyof ComponentTypes = never,
-	EventTypes = any,
-	ResourceTypes = any,
+	EventTypes extends Record<string, any> = Record<string, any>,
+	ResourceTypes extends Record<string, any> = Record<string, any>,
 > {
 	label: string;
 	entityQueries?: {

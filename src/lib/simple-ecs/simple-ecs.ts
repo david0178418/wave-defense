@@ -82,7 +82,9 @@ class SimpleECS<
 		// Register all resources from the bundle
 		const resources = bundle.getResources();
 		for (const [key, value] of resources.entries()) {
-			this._resourceManager.add(key as any, value);
+			// We need to cast here because TypeScript can't verify the type compatibility
+			// between bundles, but we trust that the bundle's resource types are compatible
+			this._resourceManager.add(key as unknown as keyof ResourceTypes, value as any);
 		}
 		
 		// Mark this bundle as installed
@@ -116,7 +118,29 @@ class SimpleECS<
 	 * Check if a resource exists
 	 */
 	hasResource<K extends keyof ResourceTypes>(key: K): boolean {
-		return this._resourceManager.has(key);process
+		return this._resourceManager.has(key);
+	}
+	
+	/**
+	 * Get a resource if it exists, or undefined if not
+	 */
+	getResource<K extends keyof ResourceTypes>(key: K): ResourceTypes[K] | undefined {
+		return this._resourceManager.getOptional(key);
+	}
+	
+	/**
+	 * Get a resource, throws error if not found
+	 */
+	getResourceOrThrow<K extends keyof ResourceTypes>(key: K): ResourceTypes[K] {
+		return this._resourceManager.get(key);
+	}
+	
+	/**
+	 * Add a resource to the ECS instance
+	 */
+	addResource<K extends keyof ResourceTypes>(key: K, resource: ResourceTypes[K]): this {
+		this._resourceManager.add(key, resource);
+		return this;
 	}
 	
 	// Entity management methods
@@ -203,7 +227,7 @@ class SimpleECS<
 			if (!system.process) continue;
 			
 			// Prepare query results
-			const queryResults: any = {};
+			const queryResults: Record<string, any[]> = {};
 			
 			// Process entity queries if defined
 			if (system.entityQueries) {
