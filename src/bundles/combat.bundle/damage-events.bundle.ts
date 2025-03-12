@@ -1,45 +1,19 @@
 import type { Sprite } from "pixi.js";
-import { Bundle } from "../lib/simple-ecs";
-import { EntityClassification, type GameOver } from "../types";
-import type { EntityCollision } from "./collision.bundle";
-import type { Invincible } from "./health.bundle";
+import { Bundle } from "../../lib/simple-ecs";
+import { EntityClassification, type GameOver } from "../../types";
+import type { Invincible } from "../health.bundle";
+import {
+	DamageType,
+	type DamageDealer,
+	type DamageEffect,
+	type Defense,
+	type EntityCollision,
+	type EntityDefeated,
+	type Heath,
+} from "./combat.bundle.types";
 
-export
-enum DamageType {
-	PHYSICAL = 'physical',
-	PROJECTILE = 'projectile',
-	ENVIRONMENTAL = 'environmental',
-}
 
-export
-interface Heath {
-	current: number;
-	max: number;
-}
 
-export
-interface DamageDealer {
-	amount: number;
-	type: DamageType;
-}
-
-export
-interface Defense {
-	resistances: Partial<Record<DamageType, number>>; // 0-1 values where 1 is 100% resistance
-	immunities: DamageType[];
-	invulnerable: boolean;
-	invulnerabilityTimer?: number;
-}
-
-export
-interface DamageEffect {
-	timer: number;
-	duration: number;
-	originalAlpha: number;
-	flashAlpha: number;
-}
-
-export
 interface Components {
 	health: Heath;
 	damageDealer: DamageDealer;
@@ -58,12 +32,6 @@ interface EntityDamaged {
 	type: DamageType;
 }
 
-interface EntityDefeated {
-	entityId: number;
-	entityType: EntityClassification;
-}
-
-// Event type for damage events
 export
 interface Events {
 	entityDamaged: EntityDamaged;
@@ -73,56 +41,8 @@ interface Events {
 }
 
 export default
-function combatBundle() {
+function damageEventsBundle() {
 	return new Bundle<Components, Events>()
-		// Process damage application
-		.addSystem('damage-dealing')
-		.addQuery('damageDealers', {
-			with: ['position', 'sprite', 'damageDealer']
-		})
-		.setProcess((queries, deltaTime, entityManager, resourceManager, eventBus) => {
-			// This system is kept as a placeholder for future damage dealing logic
-			// It currently doesn't do anything since we removed the cooldown logic
-			// But keeping the system allows us to easily reintroduce functionality later
-		})
-		.bundle
-		// Handles damage effects like invincibility and visual feedback
-		.addSystem('damage-effects')
-		.addQuery('invincibleEntities', {
-			with: ['sprite', 'invincible']
-		})
-		.addQuery('damageEffectEntities', {
-			with: ['sprite', 'damageEffect']
-		})
-		.setProcess((queries, deltaTime, entityManager) => {
-			// Process invincibility
-			for (const entity of queries.invincibleEntities) {
-				entity.components.invincible.timer += deltaTime;
-				
-				// End invincibility when duration is over
-				if (entity.components.invincible.timer >= entity.components.invincible.duration) {
-					entityManager.removeComponent(entity.id, 'invincible');
-					entity.components.sprite.alpha = 1.0; // Restore full opacity
-				}
-			}
-			
-			// Process visual damage effects (flashing, etc.)
-			for (const entity of queries.damageEffectEntities) {
-				entity.components.damageEffect.timer += deltaTime;
-				
-				// Flash the entity by alternating alpha
-				const phase = Math.sin(entity.components.damageEffect.timer * 30) * 0.5 + 0.5;
-				entity.components.sprite.alpha = entity.components.damageEffect.originalAlpha +
-					(entity.components.damageEffect.flashAlpha - entity.components.damageEffect.originalAlpha) * phase;
-				
-				// End effect when duration is over
-				if (entity.components.damageEffect.timer >= entity.components.damageEffect.duration) {
-					entityManager.removeComponent(entity.id, 'damageEffect');
-					entity.components.sprite.alpha = entity.components.damageEffect.originalAlpha;
-				}
-			}
-		})
-		.bundle
 		.addSystem('damage-event-handler')
 		.setEventHandlers({
 			entityDamaged: {
@@ -211,15 +131,12 @@ function combatBundle() {
 				}
 			},
 			
-			// Handle collision events that should cause damage
 			entityCollision: {
 				handler(data, entityManager, resourceManager, eventBus) {
 					const { entityA, entityB, entityAType, entityBType, isNew } = data;
 					
-					// If this isn't a new collision, we don't want to apply damage again
 					if (!isNew) return;
 					
-					// Handle player-enemy collisions
 					if (
 						(entityAType === EntityClassification.PLAYER && entityBType.toString().startsWith('ENEMY_')) ||
 						(entityBType === EntityClassification.PLAYER && entityAType.toString().startsWith('ENEMY_'))
@@ -227,7 +144,6 @@ function combatBundle() {
 						const playerId = entityAType === EntityClassification.PLAYER ? entityA : entityB;
 						const enemyId = entityAType === EntityClassification.PLAYER ? entityB : entityA;
 						
-						// Get the enemy to determine damage amount
 						const enemy = entityManager.getEntity(enemyId);
 						if (!enemy || !enemy.components.damageDealer) return;
 						
@@ -239,11 +155,8 @@ function combatBundle() {
 							type: enemy.components.damageDealer.type
 						});
 					}
-					
-					// Additional collision-to-damage handlers can be added here
-					// For example: player projectiles hitting enemies, etc.
 				}
 			}
 		})
 		.bundle;
-} 
+}

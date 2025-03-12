@@ -1,11 +1,10 @@
 import { Application, Sprite, Texture, Container, Graphics, Text } from "pixi.js";
 import { Bundle } from "../lib/simple-ecs";
 import { EntityClassification, type EntityType, type GameOver, type initializeMap, type initializePlayer } from "../types";
-import { DamageType, type Defense } from "./combat.bundle";
 import type { Position, Acceleration, Drag, MaxVelocity, Speed, Velocity } from "./movement.bundle";
 import type { Health, Invincible } from "./health.bundle";
-import type { Hitbox } from "./collision.bundle";
 import type { InitializeGame } from "../app";
+import { type Defense, DamageType, type Hitbox } from "./combat.bundle/combat.bundle.types";
 
 interface Components {
 	player: true;

@@ -1,6 +1,21 @@
 import { Bundle } from "../lib/simple-ecs";
-import type { EntityClassification, EntityType } from "../types";
+import type { EntityType } from "../types";
+import type { Collision, EntityCollision, Hitbox } from "./combat.bundle/combat.bundle.types";
 import type { Position } from "./movement.bundle";
+
+
+interface Components {
+	position: Position;
+	hitbox: Hitbox;
+	collision: Collision;
+	entityType: EntityType;
+	player: true;
+	enemy: true;
+}
+
+interface  Events {
+	entityCollision: EntityCollision;
+}
 
 export default
 function collisionBundle() {
@@ -31,8 +46,13 @@ function collisionBundle() {
 				'enemy',
 			],
 		})
-		.setProcess(({ collidableEntities, playerEntities, enemyEntities }, deltaTime, entityManager, resourceManager, eventBus) => {
-			// Initialize or reset collision states
+		.setProcess((queries, deltaTime, entityManager, resourceManager, eventBus) => {
+			const {
+				collidableEntities,
+				playerEntities,
+				enemyEntities,
+			} = queries;
+			
 			for (const entity of collidableEntities) {
 				// Store previous collisions
 				if (!entity.components.collision) {
@@ -41,7 +61,7 @@ function collisionBundle() {
 						wasColliding: []
 					});
 				} else {
-					entity.components.collision.wasColliding = [...entity.components.collision.collidingWith];
+					entity.components.collision.wasColliding = entity.components.collision.collidingWith;
 					entity.components.collision.collidingWith = [];
 				}
 			}
@@ -108,48 +128,7 @@ function collisionBundle() {
 				}
 			}
 			
-			// Process collisions between other entities if needed
-			// This section can be extended to handle other specific collision pairs
-			// ... 
 		})
 		.bundle;
 }
 
-
-export
-interface Hitbox {
-	width: number;
-	height: number;
-	offsetX?: number;
-	offsetY?: number;
-	isTrigger?: boolean; // If true, detects but doesn't block
-}
-	
-export
-interface Collision {
-	collidingWith: number[]; // IDs of entities currently colliding with
-	wasColliding: number[]; // IDs of entities colliding in previous frame
-}
-
-
-export
-interface EntityCollision {
-	entityA: number;
-	entityB: number;
-	entityAType: EntityClassification;
-	entityBType: EntityClassification;
-	isNew: boolean; // Whether this is a new collision or ongoing
-}
-
-interface Components {
-	position: Position;
-	hitbox: Hitbox;
-	collision: Collision;
-	entityType: EntityType;
-	player: true;
-	enemy: true;
-}
-
-interface  Events {
-	entityCollision: EntityCollision;
-}

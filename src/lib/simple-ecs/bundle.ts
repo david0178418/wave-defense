@@ -114,85 +114,37 @@ export type Merge<T1, T2> = {
 				: never;
 };
 
-/**
- * Combine multiple bundles into a single bundle with merged types
- */
-export function combineBundle<
-	C1 extends Record<string, any>,
-	E1 extends Record<string, any>,
-	R1 extends Record<string, any>,
-	C2 extends Record<string, any>,
-	E2 extends Record<string, any>,
-	R2 extends Record<string, any>
+export type MergeAll<T extends any[]> = T extends [infer First, ...infer Rest] ?
+	Rest extends [] ?
+		First: Merge<First, MergeAll<Rest>>:
+	{};
+
+export function mergeBundles<
+	Bundles extends Array<Bundle<any, any, any>>
 >(
-	bundle1: Bundle<C1, E1, R1>,
-	bundle2: Bundle<C2, E2, R2>,
-	id?: string
-): Bundle<Merge<C1, C2>, Merge<E1, E2>, Merge<R1, R2>> {
-	const combined = new Bundle<Merge<C1, C2>, Merge<E1, E2>, Merge<R1, R2>>(
-		id || `combined_${bundle1.id}_${bundle2.id}`
-	);
-
-	for (const system of bundle1.getSystemBuilders()) {
-		combined.addSystem(system as any);
-	}
-	
-	for (const system of bundle2.getSystemBuilders()) {
-		combined.addSystem(system as any);
-	}
-	
-	// Copy resources from both bundles (bundle2 takes precedence for conflicts)
-	for (const [label, resource] of bundle1.getResources().entries()) {
-		combined.addResource(label as any, resource);
-	}
-	
-	for (const [label, resource] of bundle2.getResources().entries()) {
-		combined.addResource(label as any, resource);
-	}
-	
-	return combined;
-}
-
-/**
- * Combine any number of bundles into a single bundle
- */
-export function combineBundles<
-	C extends Record<string, any>,
-	E extends Record<string, any>,
-	R extends Record<string, any>
->(bundles: Array<Bundle<C, E, R>>, id?: string): Bundle<C, E, R> {
+	id: string,
+	...bundles: Bundles
+): Bundle<
+	MergeAll<{ [K in keyof Bundles]: Bundles[K] extends Bundle<infer C, any, any> ? C : never }>,
+	MergeAll<{ [K in keyof Bundles]: Bundles[K] extends Bundle<any, infer E, any> ? E : never }>,
+	MergeAll<{ [K in keyof Bundles]: Bundles[K] extends Bundle<any, any, infer R> ? R : never }>
+> {
 	if (bundles.length === 0) {
-		return new Bundle<C, E, R>(id || 'empty_combined_bundle');
+		return new Bundle(id);
 	}
+
+	const combined = new Bundle(id);
 	
-	if (bundles.length === 1 && bundles[0]) {
-		const bundle = bundles[0];
-		if (id) {
-			bundle.id = id;
+	for (const bundle of bundles) {
+		for (const system of bundle.getSystemBuilders()) {
+			combined.addSystem(system as any);
 		}
-		return bundle;
-	}
-	
-	// If we have invalid bundles, create a new empty one with the given ID
-	if (!bundles[0]) {
-		return new Bundle<C, E, R>(id || 'fallback_bundle');
-	}
-	
-	// Start with the first bundle
-	let result = bundles[0];
-	
-	// Combine with each additional bundle
-	for (let i = 1; i < bundles.length; i++) {
-		const nextBundle = bundles[i];
-		if (nextBundle) {
-			result = combineBundle(result, nextBundle);
+		
+		// Add resources from this bundle
+		for (const [label, resource] of bundle.getResources().entries()) {
+			combined.addResource(label as any, resource);
 		}
 	}
 	
-	// Set ID if provided
-	if (id) {
-		result.id = id;
-	}
-	
-	return result;
-} 
+	return combined as any;
+}

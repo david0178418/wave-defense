@@ -15,7 +15,7 @@ const EntityClassification = {
 } as const
 
 export
-type EntityClassification = typeof EntityClassification[keyof typeof EntityClassification];
+type EntityClassification = Enum<typeof EntityClassification>;
 
 export type initializeMap = {};
 export type initializePlayer = {};
@@ -27,3 +27,6 @@ interface ConfigResource {
 	deadzonePercentWidth: number;
 	deadzonePercentHeight: number;
 }
+
+export
+type Enum<T extends object> = T[keyof T];

@@ -1,6 +1,6 @@
 import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
-import Bundle, { combineBundle } from './bundle';
+import Bundle, { mergeBundles } from './bundle';
 
 // Define test component and resource types
 interface PositionComponents {
@@ -91,7 +91,11 @@ describe('Bundle', () => {
 			});
 			
 		// Combine the bundles
-		const gameBundle = combineBundle(physicsBundle, playerBundle, 'game');
+		const gameBundle = mergeBundles(
+			'game',
+			physicsBundle,
+			playerBundle,
+		);
 		
 		// Check that the combined bundle has the systems and resources from both bundles
 		expect(gameBundle.getSystems().length).toBe(2);
