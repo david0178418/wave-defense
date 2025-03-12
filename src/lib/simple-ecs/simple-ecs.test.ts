@@ -1,7 +1,6 @@
 import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
-import { createBundle } from './bundle';
-import { createSystem } from './system-builder';
+import Bundle from './bundle';
 
 interface TestComponents {
 	position: { x: number; y: number };
@@ -71,21 +70,21 @@ describe('SimpleECS', () => {
 		const processedEntities: number[] = [];
 		
 		// Create a bundle with the system
-		const bundle = createBundle<TestComponents>()
-			.addSystem(
-				createSystem<TestComponents>('MovementSystem')
-					.addQuery('entities', {
-						with: ['position', 'velocity'],
-						without: ['health'],
-					})
-					.setProcess((queries) => {
-						for (const entity of queries.entities) {
-							processedEntities.push(entity.id);
+		const bundle = new Bundle<TestComponents>();
+		bundle
+			.addSystem('MovementSystem')
+			.addQuery('entities', {
+				with: ['position', 'velocity'],
+					without: ['health'],
+				})
+				.setProcess((queries) => {
+					for (const entity of queries.entities) {
+						processedEntities.push(entity.id);
 
-							// In a real system, we'd update position based on velocity and deltaTime
-						}
-					})
-			);
+					// In a real system, we'd update position based on velocity and deltaTime
+				}
+			})
+			.bundle;
 		
 		// Install the bundle
 		world.install(bundle);
@@ -99,7 +98,7 @@ describe('SimpleECS', () => {
 		const world = new SimpleECS<TestComponents, {}, TestResources>();
 		
 		// Adding resources using a bundle
-		const bundle = createBundle<TestComponents, {}, TestResources>()
+		const bundle = new Bundle<TestComponents, {}, TestResources>()
 			.addResource('config', { debug: true, maxEntities: 1000 });
 		
 		// Install the bundle
@@ -127,13 +126,12 @@ describe('SimpleECS', () => {
 		let processRan = false;
 		
 		// Create a bundle with the system
-		const bundle = createBundle<TestComponents>()
-			.addSystem(
-				createSystem<TestComponents>('MovementSystem')
-					.setProcess(() => {
-						processRan = true;
-					})
-			);
+		const bundle = new Bundle<TestComponents>()
+			.addSystem('MovementSystem')
+			.setProcess(() => {
+				processRan = true;
+			})
+			.bundle;
 		
 		// Install the bundle
 		world.install(bundle);
@@ -161,19 +159,18 @@ describe('SimpleECS', () => {
 		let processCalled = false;
 		
 		// Create a system with lifecycle hooks
-		const bundle = createBundle<TestComponents>()
-			.addSystem(
-				createSystem<TestComponents>('MovementControlSystem')
-					.setOnAttach(() => {
-						attachCalled = true;
-					})
-					.setOnDetach(() => {
-						detachCalled = true;
-					})
-					.setProcess(() => {
-						processCalled = true;
-					})
-			);
+		const bundle = new Bundle<TestComponents>()
+			.addSystem('MovementControlSystem')
+			.setOnAttach(() => {
+				attachCalled = true;
+			})
+			.setOnDetach(() => {
+				detachCalled = true;
+			})
+			.setProcess(() => {
+				processCalled = true;
+			})
+			.bundle;
 		
 		// Add the system
 		world.install(bundle);
@@ -197,21 +194,20 @@ describe('SimpleECS', () => {
 		world.addComponent(entity.id, 'state', { current: 'idle', previous: '' });
 		
 		// Create a system that updates state
-		const bundle = createBundle<TestComponents>()
-			.addSystem(
-				createSystem<TestComponents>('StateSystem')
-					.addQuery('statefulEntities', {
-						with: ['state'],
-					})
-					.setProcess((queries) => {
-						for (const entity of queries.statefulEntities) {
-							// Update state
-							const state = entity.components.state;
-							state.previous = state.current;
-							state.current = 'running';
-						}
-					})
-			);
+		const bundle = new Bundle<TestComponents>()
+			.addSystem('StateSystem')
+			.addQuery('statefulEntities', {
+				with: ['state'],
+			})
+			.setProcess((queries) => {
+				for (const entity of queries.statefulEntities) {
+					// Update state
+					const state = entity.components.state;
+					state.previous = state.current;
+					state.current = 'running';
+				}
+			})
+			.bundle;
 		
 		// Install the bundle
 		world.install(bundle);
@@ -238,24 +234,23 @@ describe('SimpleECS', () => {
 		const removedEntities: number[] = [];
 		
 		// Create a lifetime system
-		const bundle = createBundle<TestComponents>()
-			.addSystem(
-				createSystem<TestComponents>('LifetimeSystem')
-					.addQuery('lifetimeEntities', {
-						with: ['lifetime'],
-					})
-					.setProcess((queries, deltaTime, entityManager) => {
-						for (const entity of queries.lifetimeEntities) {
-							// Reduce lifetime
-							entity.components.lifetime.remaining -= 1;
-							
-							// Record entity ID but don't actually remove yet
-							if (entity.components.lifetime.remaining <= 0) {
-								removedEntities.push(entity.id);
-							}
-						}
-					})
-			);
+		const bundle = new Bundle<TestComponents>()
+			.addSystem('LifetimeSystem')
+			.addQuery('lifetimeEntities', {
+				with: ['lifetime'],
+			})
+			.setProcess((queries, deltaTime, entityManager) => {
+				for (const entity of queries.lifetimeEntities) {
+					// Reduce lifetime
+					entity.components.lifetime.remaining -= 1;
+					
+					// Record entity ID but don't actually remove yet
+					if (entity.components.lifetime.remaining <= 0) {
+						removedEntities.push(entity.id);
+					}
+				}
+			})
+			.bundle;
 		
 		// Install the bundle
 		world.install(bundle);
@@ -295,19 +290,18 @@ describe('SimpleECS', () => {
 		const entity = world.createEntity();
 		
 		// Create a system that adds and removes components
-		const bundle = createBundle<TestComponents>()
-			.addSystem(
-				createSystem<TestComponents>('DynamicComponentSystem')
-					.setProcess((_, __, entityManager) => {
-						// Add a position component if it doesn't exist
-						if (!world.getComponent(entity.id, 'position')) {
-							entityManager.addComponent(entity.id, 'position', { x: 0, y: 0 });
-						} else {
-							// Remove the position component if it does exist
-							entityManager.removeComponent(entity.id, 'position');
-						}
-					})
-			);
+		const bundle = new Bundle<TestComponents>()
+			.addSystem('DynamicComponentSystem')
+			.setProcess((_, __, entityManager) => {
+				// Add a position component if it doesn't exist
+				if (!world.getComponent(entity.id, 'position')) {
+					entityManager.addComponent(entity.id, 'position', { x: 0, y: 0 });
+				} else {
+					// Remove the position component if it does exist
+					entityManager.removeComponent(entity.id, 'position');
+				}
+			})
+			.bundle;
 		
 		// Install the bundle
 		world.install(bundle);

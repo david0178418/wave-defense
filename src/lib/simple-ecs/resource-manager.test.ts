@@ -1,7 +1,6 @@
 import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
-import { createBundle } from './bundle';
-import { createSystem } from './system-builder';
+import Bundle from './bundle';
 
 interface TestComponents {
 	position: { x: number; y: number };
@@ -82,32 +81,31 @@ describe('ResourceManager', () => {
 		world.addComponent(entity.id, 'position', { x: 0, y: 0 });
 		
 		// Create a bundle with resources and a system
-		const bundle = createBundle<TestComponents, TestEvents, TestResources>()
+		const bundle = new Bundle<TestComponents, TestEvents, TestResources>()
 			.addResource('config', { debug: true, timeStep: 1/60 })
 			.addResource('gameState', { current: 'playing', score: 0 })
-			.addSystem(
-				createSystem<TestComponents, TestEvents, TestResources>('ConfigAwareSystem')
-					.addQuery('entities', {
-						with: ['position']
-					})
-					.setProcess((queries, deltaTime, entityManager, resourceManager) => {
-						// Get resources
-						const config = resourceManager.get('config');
-						const gameState = resourceManager.get('gameState');
-						
-						// Use resources to update entities
-						for (const entity of queries.entities) {
-							// Move entity based on config timeStep
-							const position = entity.components.position;
-							position.x += 10 * (config?.timeStep || 0);
-							
-							// Update game state
-							if (gameState) {
-								gameState.score += 1;
-							}
-						}
-					})
-			);
+			.addSystem('ConfigAwareSystem')
+			.addQuery('entities', {
+				with: ['position']
+			})
+			.setProcess((queries, deltaTime, entityManager, resourceManager) => {
+				// Get resources
+				const config = resourceManager.get('config');
+				const gameState = resourceManager.get('gameState');
+				
+				// Use resources to update entities
+				for (const entity of queries.entities) {
+					// Move entity based on config timeStep
+					const position = entity.components.position;
+					position.x += 10 * (config?.timeStep || 0);
+					
+					// Update game state
+					if (gameState) {
+						gameState.score += 1;
+					}
+				}
+			})
+			.bundle;
 		
 		// Install the bundle
 		world.install(bundle);
@@ -131,20 +129,19 @@ describe('ResourceManager', () => {
 		let logMessage = '';
 		
 		// Create a bundle with the logger resource
-		const bundle = createBundle<TestComponents, TestEvents, TestResources>()
+		const bundle = new Bundle<TestComponents, TestEvents, TestResources>()
 			.addResource('logger', { 
 				log: (message: string) => {
 					logMessage = message;
 				}
 			})
-			.addSystem(
-				createSystem<TestComponents, TestEvents, TestResources>('LoggingSystem')
-					.setProcess((_, __, ___, resourceManager) => {
-						// Use the logger resource
-						const logger = resourceManager.get('logger');
-						logger?.log('System executed');
-					})
-			);
+			.addSystem('LoggingSystem')
+			.setProcess((_, __, ___, resourceManager) => {
+			// Use the logger resource
+				const logger = resourceManager.get('logger');
+				logger?.log('System executed');
+			})
+			.bundle;
 		
 		// Install the bundle
 		world.install(bundle);
@@ -163,22 +160,21 @@ describe('ResourceManager', () => {
 		let resourceUsed = false;
 		
 		// Create a bundle with resources and a system with event handlers
-		const bundle = createBundle<TestComponents, TestEvents, TestResources>()
+		const bundle = new Bundle<TestComponents, TestEvents, TestResources>()
 			.addResource('config', { debug: true, timeStep: 1/60 })
-			.addSystem(
-				createSystem<TestComponents, TestEvents, TestResources>('ResourceUsingEventSystem')
-					.setEventHandlers({
-						collision: {
-							handler: (data, entityManager, resourceManager, eventBus) => {
-								// Access and use resources in event handler
-								const config = resourceManager.get('config');
-								if (config?.debug) {
-									resourceUsed = true;
-								}
-							}
+			.addSystem('ResourceUsingEventSystem')
+			.setEventHandlers({
+				collision: {
+					handler: (data, entityManager, resourceManager, eventBus) => {
+						// Access and use resources in event handler
+						const config = resourceManager.get('config');
+						if (config?.debug) {
+							resourceUsed = true;
 						}
-					})
-			);
+					}
+				}
+			})
+			.bundle;
 		
 		// Install the bundle
 		world.install(bundle);

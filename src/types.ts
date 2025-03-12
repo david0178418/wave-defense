@@ -1,31 +1,11 @@
-import type { Application, Sprite, Container, Text } from "pixi.js";
-import type { MovementComponents } from "./features/movement-feature";
-import type { PlayerControlComponents, PlayerControlResources } from "./features/player-control-feature";
-import type { EnemyComponents, EnemyResources } from "./features/enemy-feature";
-import type { CombatComponents, CombatEvents } from "./features/combat-feature";
-import type { CollisionComponents, CollisionEvents } from "./features/collision-feature";
-
 export
-interface Components extends 
-	MovementComponents, 
-	PlayerControlComponents,
-	EnemyComponents,
-	CombatComponents,
-	CollisionComponents,
-	JunkDrawerOfComponents {
+interface EntityType {
+	faction: 'player' | 'enemy' | 'neutral';  // Used for determining hostility
+	type: EntityClassification;
 }
 
 export
-interface JunkDrawerOfComponents {
-	player: true;
-	sprite: Sprite;
-	entityType: {
-		faction: 'player' | 'enemy' | 'neutral';  // Used for determining hostility
-		type: EntityType;
-	};
-}
-
-export const EntityType = {
+const EntityClassification = {
 	PLAYER: 'player',
 	ENEMY_BASIC: 'enemy_basic',
 	// Future enemy types can be added here
@@ -35,39 +15,16 @@ export const EntityType = {
 } as const
 
 export
-type EntityType = typeof EntityType[keyof typeof EntityType];
+type EntityClassification = typeof EntityClassification[keyof typeof EntityClassification];
+
+export type InitializeGame = {};
+export type initializeMap = {};
+export type initializePlayer = {};
+export type GameOver = {};
 
 export
-interface Events extends 
-	CombatEvents,
-	CollisionEvents,
-	JunkDrawerOfEvents {
-}
-
-export
-interface JunkDrawerOfEvents {
-	initializeGame: undefined;
-	initializeMap: undefined;
-	initializePlayer: undefined;
-	gameOver: undefined;
-}
-
-export
-interface Resources extends 
-	PlayerControlResources,
-	EnemyResources,
-	JunkDrawerOfResources {
-}
-
-export
-interface JunkDrawerOfResources {
-	pixi: Application;
-	worldContainer: Container;
-	uiContainer: Container;
-	healthText: Text;
-	config: {
-		mapSize: number;
-		deadzonePercentWidth: number;
-		deadzonePercentHeight: number;
-	};
+interface ConfigResource {
+	mapSize: number;
+	deadzonePercentWidth: number;
+	deadzonePercentHeight: number;
 }

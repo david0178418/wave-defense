@@ -1,7 +1,6 @@
 import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
-import { createBundle } from './bundle';
-import { createSystem } from './system-builder';
+import Bundle from './bundle';
 
 interface TestComponents {
 	position: { x: number; y: number };
@@ -120,22 +119,21 @@ describe('EventSystem', () => {
 		const receivedEvents: any[] = [];
 		
 		// Create a bundle with a system that has event handlers
-		const bundle = createBundle<TestComponents, TestEvents>()
-			.addSystem(
-				createSystem<TestComponents, TestEvents>('HealthEventSystem')
-					.setEventHandlers({
-						healthChanged: {
+		const bundle = new Bundle<TestComponents, TestEvents>();
+		bundle
+			.addSystem('HealthEventSystem')
+			.setEventHandlers({
+				healthChanged: {
 							handler: (data) => {
 								receivedEvents.push(data);
 							}
 						},
-						entityDestroyed: {
-							handler: (data) => {
-								receivedEvents.push(data);
-							}
-						}
-					})
-			);
+				entityDestroyed: {
+					handler: (data) => {
+						receivedEvents.push(data);
+					}
+				}
+			});
 		
 		// Install the bundle
 		world.install(bundle);
@@ -172,18 +170,17 @@ describe('EventSystem', () => {
 		let receivedData: any = null;
 		
 		// Add system with an event handler that will receive the parameters
-		const bundle = createBundle<TestComponents, TestEvents>()
-			.addSystem(
-				createSystem<TestComponents, TestEvents>('ParameterTestSystem')
-					.setEventHandlers({
-						healthChanged: {
-							handler: (data, entityManager) => {
-								receivedData = data;
-								receivedEntityManager = entityManager;
-							}
-						}
-					})
-			);
+		const bundle = new Bundle<TestComponents, TestEvents>();
+		bundle
+			.addSystem('ParameterTestSystem')
+			.setEventHandlers({
+				healthChanged: {
+					handler: (data, entityManager) => {
+						receivedData = data;
+						receivedEntityManager = entityManager;
+					}
+				}
+			});
 		
 		// Install the bundle
 		world.install(bundle);
@@ -270,61 +267,60 @@ describe('EventSystem', () => {
 		};
 		
 		// Add a system that handles collision events and applies damage
-		const bundle = createBundle<TestComponents, TestEvents>()
-			.addSystem(
-				createSystem<TestComponents, TestEvents>('EventDrivenDamageSystem')
-					.setEventHandlers({
-						collision: {
-							handler: (data, entityManager, resourceManager, eventBus) => {
-								// Collision should reduce health of both entities
-								const entity1 = entityManager.getEntity(data.entity1Id);
-								const entity2 = entityManager.getEntity(data.entity2Id);
+		const bundle = new Bundle<TestComponents, TestEvents>();
+		bundle
+			.addSystem('EventDrivenDamageSystem')
+			.setEventHandlers({
+				collision: {
+					handler: (data, entityManager, resourceManager, eventBus) => {
+						// Collision should reduce health of both entities
+						const entity1 = entityManager.getEntity(data.entity1Id);
+						const entity2 = entityManager.getEntity(data.entity2Id);
+						
+						if (entity1 && entity2) {
+							if (entityManager.getComponent(entity1.id, 'health') &&
+								entityManager.getComponent(entity2.id, 'health')) {
 								
-								if (entity1 && entity2) {
-									if (entityManager.getComponent(entity1.id, 'health') &&
-										entityManager.getComponent(entity2.id, 'health')) {
-										
-										// Get current health values
-										const health1 = entityManager.getComponent(entity1.id, 'health');
-										const health2 = entityManager.getComponent(entity2.id, 'health');
-										
-										if (health1 && health2) {
-											// Log the damage
-											damageLog[entity1.id].push(`health=${health1.value}`);
-											damageLog[entity2.id].push(`health=${health2.value}`);
-											
-											// Apply damage
-											const newHealth1 = { value: Math.max(0, health1.value - 10) };
-											const newHealth2 = { value: Math.max(0, health2.value - 10) };
-											
-											entityManager.addComponent(entity1.id, 'health', newHealth1);
-											entityManager.addComponent(entity2.id, 'health', newHealth2);
-											
-											// Emit health changed events
-											eventBus.publish('healthChanged', {
-												entityId: entity1.id,
-												oldValue: health1.value,
-												newValue: newHealth1.value
-											});
-											
-											eventBus.publish('healthChanged', {
-												entityId: entity2.id,
-												oldValue: health2.value,
-												newValue: newHealth2.value
-											});
-										}
-									}
+								// Get current health values
+								const health1 = entityManager.getComponent(entity1.id, 'health');
+								const health2 = entityManager.getComponent(entity2.id, 'health');
+								
+								if (health1 && health2) {
+									// Log the damage
+									damageLog[entity1.id].push(`health=${health1.value}`);
+									damageLog[entity2.id].push(`health=${health2.value}`);
+									
+									// Apply damage
+									const newHealth1 = { value: Math.max(0, health1.value - 10) };
+									const newHealth2 = { value: Math.max(0, health2.value - 10) };
+									
+									entityManager.addComponent(entity1.id, 'health', newHealth1);
+									entityManager.addComponent(entity2.id, 'health', newHealth2);
+									
+									// Emit health changed events
+									eventBus.publish('healthChanged', {
+										entityId: entity1.id,
+										oldValue: health1.value,
+										newValue: newHealth1.value
+									});
+									
+									eventBus.publish('healthChanged', {
+										entityId: entity2.id,
+										oldValue: health2.value,
+										newValue: newHealth2.value
+									});
 								}
 							}
-						},
-						healthChanged: {
-							handler: (data, entityManager) => {
-								// Log health changes
-								damageLog[data.entityId].push(`healthChanged=${data.newValue}`);
-							}
 						}
-					})
-			);
+					}
+				},
+				healthChanged: {
+					handler: (data, entityManager) => {
+						// Log health changes
+						damageLog[data.entityId].push(`healthChanged=${data.newValue}`);
+					}
+				}
+			});
 		
 		// Install the bundle
 		world.install(bundle);

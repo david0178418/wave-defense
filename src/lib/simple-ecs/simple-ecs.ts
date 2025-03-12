@@ -41,6 +41,8 @@ class SimpleECS<
 			// Need to cast here because we can't fully type the system generics
 			const typedSystem = system as unknown as System<ComponentTypes, any, any, EventTypes, ResourceTypes>;
 			this._systems.push(typedSystem);
+
+			console.log(typedSystem);
 			
 			// Call onAttach lifecycle hook if defined
 			if (typedSystem.onAttach) {
@@ -49,6 +51,10 @@ class SimpleECS<
 					this._resourceManager,
 					this._eventBus
 				);
+				if(!bundle.getSystems().length) {
+					console.warn(`Bundle ${bundle.id} has no systems`);
+					// return this;
+				}
 			}
 			
 			// Auto-subscribe to events if eventHandlers are defined
@@ -109,7 +115,7 @@ class SimpleECS<
 	 * Check if a resource exists
 	 */
 	hasResource<K extends keyof ResourceTypes>(key: K): boolean {
-		return this._resourceManager.has(key);
+		return this._resourceManager.has(key);process
 	}
 	
 	// Entity management methods

@@ -1,16 +1,14 @@
-import { createBundle } from "../lib/simple-ecs";
-import type { MovementComponents } from "./movement-feature";
+import { Bundle } from "../lib/simple-ecs";
+import type { Acceleration, Speed } from "./movement-feature";
 
-export
-interface PlayerControlComponents extends MovementComponents {
+interface Components {
 	player: true;
+	acceleration: Acceleration;
+	speed: Speed;
 }
 
-export
-interface PlayerControlEvents {}
 
-export
-interface PlayerControlResources {
+interface Resources {
 	activeKeyMap: ActiveControlMap;
 }
 
@@ -24,43 +22,38 @@ interface ActiveControlMap {
 
 export default
 function playerControlFeature() {
-	// Create a bundle with the player control functionality
-	const bundle = createBundle<PlayerControlComponents, PlayerControlEvents, PlayerControlResources>()
-	
-	return bundle
+	return new Bundle<Components, {}, Resources>()
 	.addResource('activeKeyMap', keyMap())
-		.addSystem(
-			bundle
-				.createSystem('player-control')
-				.addQuery('players', {
-					with: ['acceleration', 'speed', 'player']
-				})
-				.setProcess((queries, deltaTime, entityManager, resourceManager) => {
-					const players = queries.players;
-					if (!players || players.length === 0) return;
-					
-					const player = players[0];
-					if (!player) return;
-					
-					const activeKeyMap = resourceManager.get('activeKeyMap');
-	
-					if(activeKeyMap.up) {
-						player.components.acceleration.y = -player.components.speed.y;
-					} else if(activeKeyMap.down) {
-						player.components.acceleration.y = player.components.speed.y;
-					} else {
-						player.components.acceleration.y = 0;
-					}
-	
-					if(activeKeyMap.left) {
-						player.components.acceleration.x = -player.components.speed.x;
-					} else if(activeKeyMap.right) {
-						player.components.acceleration.x = player.components.speed.x;
-					} else {
-						player.components.acceleration.x = 0;
-					}
-				})
-		);
+		.addSystem('player-control')
+		.addQuery('players', {
+			with: ['acceleration', 'speed', 'player']
+		})
+		.setProcess((queries, deltaTime, entityManager, resourceManager) => {
+			const players = queries.players;
+			if (!players || players.length === 0) return;
+			
+			const player = players[0];
+			if (!player) return;
+			
+			const activeKeyMap = resourceManager.get('activeKeyMap');
+
+			if(activeKeyMap.up) {
+				player.components.acceleration.y = -player.components.speed.y;
+			} else if(activeKeyMap.down) {
+				player.components.acceleration.y = player.components.speed.y;
+			} else {
+				player.components.acceleration.y = 0;
+			}
+
+			if(activeKeyMap.left) {
+				player.components.acceleration.x = -player.components.speed.x;
+			} else if(activeKeyMap.right) {
+				player.components.acceleration.x = player.components.speed.x;
+			} else {
+				player.components.acceleration.x = 0;
+			}
+		})
+		.bundle;
 }
 
 function keyMap(): ActiveControlMap {

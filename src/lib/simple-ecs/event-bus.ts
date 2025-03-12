@@ -68,6 +68,7 @@ class EventBus<EventTypes> {
 		eventType: E,
 		data: EventTypes[E] = undefined as EventTypes[E]
 	): void {
+		console.log("Publishing event", this.handlers);
 		const handlers = this.handlers.get(eventType);
 		if (!handlers) return;
 

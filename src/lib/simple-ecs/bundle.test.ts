@@ -1,6 +1,6 @@
 import { expect, describe, test } from 'bun:test';
 import SimpleECS from './simple-ecs';
-import Bundle, { createBundle, combineBundle } from './bundle';
+import Bundle, { combineBundle } from './bundle';
 
 // Define test component and resource types
 interface PositionComponents {
@@ -27,14 +27,13 @@ type GameResources = PositionResources & PlayerResources;
 
 describe('Bundle', () => {
 	test('should create a bundle with correct type parameters', () => {
-		const bundle = createBundle<PositionComponents, {}, PositionResources>();
+		const bundle = new Bundle<PositionComponents, {}, PositionResources>();
 		expect(bundle).toBeInstanceOf(Bundle);
 	});
 
 	test('should add systems to the bundle', () => {
-		const bundle = createBundle<PositionComponents, {}, PositionResources>();
-		const system = bundle.createSystem('test');
-		bundle.addSystem(system);
+		const bundle = new Bundle<PositionComponents, {}, PositionResources>();
+		bundle.addSystem('test');
 		
 		// Verify systems were added by checking the built systems
 		const systems = bundle.getSystems();
@@ -43,7 +42,7 @@ describe('Bundle', () => {
 	});
 
 	test('should add resources to the bundle', () => {
-		const bundle = createBundle<PositionComponents, {}, PositionResources>();
+		const bundle = new Bundle<PositionComponents, {}, PositionResources>();
 		bundle.addResource('gravity', { value: 9.8 });
 		
 		// Verify resources were added
@@ -52,38 +51,8 @@ describe('Bundle', () => {
 		expect(resources.get('gravity')).toEqual({ value: 9.8 });
 	});
 
-	test('should install a bundle into a SimpleECS instance', () => {
-		// Create a world
-		const world = new SimpleECS<PositionComponents, {}, PositionResources>();
-		
-		// Create a bundle and system builder within that bundle
-		const tempBundle = createBundle<PositionComponents, {}, PositionResources>();
-		const systemBuilder = tempBundle.createSystem('movement')
-			.addQuery('movingEntities', { 
-				with: ['position', 'velocity']
-			})
-			.setProcess(() => {
-				// Dummy process function
-			});
-		
-		// Create another bundle to actually install
-		const bundle = createBundle<PositionComponents, {}, PositionResources>()
-			.addSystem(systemBuilder)
-			.addResource('gravity', { value: 9.8 });
-		
-		// Install the bundle
-		world.install(bundle);
-		
-		// Verify the bundle was installed by checking for the resource
-		expect(world.hasResource('gravity')).toBe(true);
-		expect(world.resourceManager.get('gravity')).toEqual({ value: 9.8 });
-		
-		// Verify the bundle ID is in the installed bundles
-		expect(world.installedBundles).toContain(bundle.id);
-	});
-
 	test('should handle a world installing a bundle with the install method', () => {
-		const bundle = createBundle<PositionComponents, {}, PositionResources>('test-bundle')
+		const bundle = new Bundle<PositionComponents, {}, PositionResources>('test-bundle')
 			.addResource('gravity', { value: 9.8 });
 			
 		const world = new SimpleECS<PositionComponents, {}, PositionResources>();
@@ -97,11 +66,15 @@ describe('Bundle', () => {
 
 	test('should combine two bundles with combineBundle', () => {
 		// Create bundles to get properly typed system builders
-		const physicsBundle = createBundle<PositionComponents, {}, PositionResources>();
-		const playerBundle = createBundle<PlayerComponents, {}, PlayerResources>();
+		const physicsBundle = new Bundle<PositionComponents, {}, PositionResources>();
+		const playerBundle = new Bundle<PlayerComponents, {}, PlayerResources>();
+		
+		// Add resources to each bundle
+		physicsBundle.addResource('gravity', { value: 9.8 });
+		playerBundle.addResource('playerControls', { up: false, down: false, left: false, right: false });
 		
 		// Create system builders using the bundles
-		const physicsSystem = physicsBundle.createSystem('physics')
+		physicsBundle.addSystem('physics')
 			.addQuery('movingEntities', { 
 				with: ['position', 'velocity']
 			})
@@ -109,26 +82,16 @@ describe('Bundle', () => {
 				// Dummy process function
 			});
 			
-		const playerSystem = playerBundle.createSystem('player')
+		playerBundle.addSystem('player')
 			.addQuery('players', { 
 				with: ['player', 'health']
 			})
 			.setProcess(() => {
 				// Dummy process function
 			});
-		
-		// Create the physics bundle with its system
-		const physicsConfigBundle = createBundle<PositionComponents, {}, PositionResources>('physics')
-			.addResource('gravity', { value: 9.8 })
-			.addSystem(physicsSystem);
-			
-		// Create the player bundle with its system
-		const playerConfigBundle = createBundle<PlayerComponents, {}, PlayerResources>('player')
-			.addResource('playerControls', { up: false, down: false, left: false, right: false })
-			.addSystem(playerSystem);
 			
 		// Combine the bundles
-		const gameBundle = combineBundle(physicsConfigBundle, playerConfigBundle, 'game');
+		const gameBundle = combineBundle(physicsBundle, playerBundle, 'game');
 		
 		// Check that the combined bundle has the systems and resources from both bundles
 		expect(gameBundle.getSystems().length).toBe(2);

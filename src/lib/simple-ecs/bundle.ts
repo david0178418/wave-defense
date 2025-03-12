@@ -1,5 +1,4 @@
-import type { System } from './types';
-import { SystemBuilder, createSystem } from './system-builder';
+import { SystemBuilder } from './system-builder';
 
 /**
  * Bundle class that encapsulates a set of components, resources, events, and systems
@@ -8,12 +7,12 @@ import { SystemBuilder, createSystem } from './system-builder';
 export default class Bundle<
 	ComponentTypes extends Record<string, any> = Record<string, any>,
 	EventTypes extends Record<string, any> = Record<string, any>,
-	ResourceTypes extends Record<string, any> = Record<string, any>
+	ResourceTypes extends Record<string, any> = Record<string, any>,
 > {
 	private _systems: SystemBuilder<ComponentTypes, EventTypes, ResourceTypes, any>[] = [];
 	private _resources: Map<keyof ResourceTypes, any> = new Map();
 	private _id: string;
-
+	
 	constructor(id?: string) {
 		this._id = id || `bundle_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 	}
@@ -34,20 +33,14 @@ export default class Bundle<
 	}
 
 	/**
-	 * Helper method to create a properly typed SystemBuilder for this bundle
-	 */
-	createSystem(label: string): SystemBuilder<ComponentTypes, EventTypes, ResourceTypes> {
-		return createSystem<ComponentTypes, EventTypes, ResourceTypes>(label);
-	}
-
-	/**
 	 * Add a system to this bundle
 	 */
-	addSystem<QueryDefs extends Record<string, any> = any>(
-		system: SystemBuilder<ComponentTypes, EventTypes, ResourceTypes, QueryDefs>
-	) {
+	addSystem(label: string) {
+		const system = new SystemBuilder(label, this);
+
 		this._systems.push(system);
-		return this;
+
+		return system;
 	}
 
 	/**
@@ -62,8 +55,8 @@ export default class Bundle<
 	 * Get all systems defined in this bundle
 	 * Returns built System objects instead of SystemBuilders
 	 */
-	getSystems(): System<ComponentTypes, any, any, EventTypes, ResourceTypes>[] {
-		return this._systems.map(builder => builder.build());
+	getSystems() {
+		return this._systems.map(system => system.build());
 	}
 
 	/**
@@ -77,24 +70,9 @@ export default class Bundle<
 		return this._resources.get(key);
 	}
 
-	/**
-	 * Get the system builders for internal use
-	 * @internal
-	 */
 	getSystemBuilders(): SystemBuilder<ComponentTypes, EventTypes, ResourceTypes, any>[] {
 		return [...this._systems];
 	}
-}
-
-/**
- * Create a new bundle with the specified types
- */
-export function createBundle<
-	ComponentTypes extends Record<string, any> = Record<string, any>,
-	EventTypes extends Record<string, any> = Record<string, any>,
-	ResourceTypes extends Record<string, any> = Record<string, any>
->(id?: string) {
-	return new Bundle<ComponentTypes, EventTypes, ResourceTypes>(id);
 }
 
 /**
@@ -125,12 +103,10 @@ export function combineBundle<
 	bundle2: Bundle<C2, E2, R2>,
 	id?: string
 ): Bundle<Merge<C1, C2>, Merge<E1, E2>, Merge<R1, R2>> {
-	// Create a new bundle with the merged types
 	const combined = new Bundle<Merge<C1, C2>, Merge<E1, E2>, Merge<R1, R2>>(
 		id || `combined_${bundle1.id}_${bundle2.id}`
 	);
-	
-	// Copy systems from both bundles
+
 	for (const system of bundle1.getSystemBuilders()) {
 		combined.addSystem(system as any);
 	}
@@ -160,7 +136,7 @@ export function combineBundles<
 	R extends Record<string, any>
 >(bundles: Array<Bundle<C, E, R>>, id?: string): Bundle<C, E, R> {
 	if (bundles.length === 0) {
-		return createBundle<C, E, R>(id || 'empty_combined_bundle');
+		return new Bundle<C, E, R>(id || 'empty_combined_bundle');
 	}
 	
 	if (bundles.length === 1 && bundles[0]) {
@@ -173,7 +149,7 @@ export function combineBundles<
 	
 	// If we have invalid bundles, create a new empty one with the given ID
 	if (!bundles[0]) {
-		return createBundle<C, E, R>(id || 'fallback_bundle');
+		return new Bundle<C, E, R>(id || 'fallback_bundle');
 	}
 	
 	// Start with the first bundle

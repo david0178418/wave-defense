@@ -1,3 +1,4 @@
+import Bundle from "./bundle";
 import type EntityManager from "./entity-manager";
 import type EventBus from "./event-bus";
 import type ResourceManager from "./resource-manager";
@@ -7,20 +8,30 @@ import type { FilteredEntity, System } from "./types";
  * Builder class for creating type-safe ECS Systems with proper query inference
  */
 export class SystemBuilder<
-	ComponentTypes,
-	EventTypes = any,
-	ResourceTypes = any,
+	ComponentTypes extends Record<string, any> = Record<string, any>,
+	EventTypes extends Record<string, any> = Record<string, any>,
+	ResourceTypes extends Record<string, any> = Record<string, any>,
 	Queries extends Record<string, QueryDefinition<ComponentTypes>> = {},
 > {
-	private label: string;
 	private queries: Queries = {} as Queries;
 	private processFunction?: ProcessFunction<ComponentTypes, EventTypes, ResourceTypes, Queries>;
 	private attachFunction?: LifecycleFunction<ComponentTypes, EventTypes, ResourceTypes>;
 	private detachFunction?: LifecycleFunction<ComponentTypes, EventTypes, ResourceTypes>;
 	private eventHandlers?: any;
 
-	constructor(label: string) {
-		this.label = label;
+	constructor(
+		private _label: string,
+		private _bundle = new Bundle<ComponentTypes, EventTypes, ResourceTypes>()
+	) {
+		console.log(`Adding system ${this._label}`);
+	}
+
+	get label() {
+		return this._label;
+	}
+
+	get bundle() {
+		return this._bundle;
 	}
 
 	/**
@@ -106,7 +117,7 @@ export class SystemBuilder<
 	 */
 	build(): System<ComponentTypes, any, any, EventTypes, ResourceTypes> {
 		const system: System<ComponentTypes, any, any, EventTypes, ResourceTypes> = {
-			label: this.label,
+			label: this._label,
 			entityQueries: this.queries as any,
 		};
 
@@ -178,13 +189,13 @@ type LifecycleFunction<
 	eventBus: EventBus<EventTypes>,
 ) => void;
 
-// Factory function for easier creation
-export function createSystem<
-	ComponentTypes,
-	EventTypes = any,
-	ResourceTypes = any
->(
-	label: string
-): SystemBuilder<ComponentTypes, EventTypes, ResourceTypes> {
-	return new SystemBuilder<ComponentTypes, EventTypes, ResourceTypes>(label);
-} 
+// // Factory function for easier creation
+// function createSystem<
+// 	ComponentTypes,
+// 	EventTypes = any,
+// 	ResourceTypes = any
+// >(
+// 	label: string
+// ): SystemBuilder<ComponentTypes, EventTypes, ResourceTypes> {
+// 	return new SystemBuilder<ComponentTypes, EventTypes, ResourceTypes>(label);
+// } 

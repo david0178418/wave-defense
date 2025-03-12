@@ -1,7 +1,4 @@
-import SimpleECS, { createBundle } from "./lib/simple-ecs";
-import type { Components, Events, Resources } from "./types";
-
-// Import features
+import SimpleECS, { Bundle } from "./lib/simple-ecs";
 import movementFeature from "./features/movement-feature";
 import playerControlFeature from "./features/player-control-feature";
 import enemyFeature from "./features/enemy-feature";
@@ -9,21 +6,26 @@ import healthFeature from "./features/health-feature";
 import gameStateFeature from "./features/game-state-feature";
 import combatFeature from "./features/combat-feature";
 import collisionFeature from "./features/collision-feature";
+import type { ConfigResource, InitializeGame } from "./types";
 
-// Create game instance
-const game = new SimpleECS<Components, Events, Resources>();
+interface Resources {
+	config: ConfigResource;
+}
 
-const fooBundle = createBundle<Components, Events, Resources>();
+interface Events {
+	initializeGame: InitializeGame;
+}
 
-// Initialize game resources
+const game = new SimpleECS<{}, Events, Resources>();
+
+const fooBundle = new Bundle();
+
 fooBundle.addResource('config', {
 	mapSize: 2000,
 	deadzonePercentWidth: 0.2,
 	deadzonePercentHeight: 0.2,
 });
 
-// Install features
-// Note the order is important - core systems like entityType should be installed first
 game
 	.install(fooBundle)
 	.install(combatFeature())
@@ -34,5 +36,5 @@ game
 	.install(healthFeature())
 	.install(gameStateFeature(game));
 
-// Start the game
 game.eventBus.publish('initializeGame');
+console.log("Game initialized");
