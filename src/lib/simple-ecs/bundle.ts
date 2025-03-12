@@ -1,6 +1,13 @@
 import { SystemBuilder } from './system-builder';
 
 /**
+ * Generates a unique ID for a bundle
+ */
+function generateBundleId(): string {
+	return `bundle_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
  * Bundle class that encapsulates a set of components, resources, events, and systems
  * that can be merged into a SimpleECS instance
  */
@@ -14,7 +21,7 @@ export default class Bundle<
 	private _id: string;
 	
 	constructor(id?: string) {
-		this._id = id || `bundle_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+		this._id = id || generateBundleId();
 	}
 
 	/**

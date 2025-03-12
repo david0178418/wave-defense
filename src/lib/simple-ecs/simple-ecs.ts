@@ -36,13 +36,18 @@ class SimpleECS<
 			return this;
 		}
 		
+		const systems = bundle.getSystems();
+		
+		// Check if bundle has systems
+		if (!systems.length) {
+			console.warn(`Bundle ${bundle.id} has no systems`);
+		}
+		
 		// Register all systems from the bundle
-		for (const system of bundle.getSystems()) {
+		for (const system of systems) {
 			// Need to cast here because we can't fully type the system generics
 			const typedSystem = system as unknown as System<ComponentTypes, any, any, EventTypes, ResourceTypes>;
 			this._systems.push(typedSystem);
-
-			console.log(typedSystem);
 			
 			// Call onAttach lifecycle hook if defined
 			if (typedSystem.onAttach) {
@@ -51,10 +56,6 @@ class SimpleECS<
 					this._resourceManager,
 					this._eventBus
 				);
-				if(!bundle.getSystems().length) {
-					console.warn(`Bundle ${bundle.id} has no systems`);
-					// return this;
-				}
 			}
 			
 			// Auto-subscribe to events if eventHandlers are defined

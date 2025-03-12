@@ -11,27 +11,7 @@ class EventBus<EventTypes> {
 		eventType: E,
 		callback: (data: EventTypes[E]) => void
 	): () => void {
-		if (!this.handlers.has(eventType)) {
-			this.handlers.set(eventType, []);
-		}
-
-		const handler: EventHandler<EventTypes[E]> = {
-			callback,
-			once: false
-		};
-
-		this.handlers.get(eventType)!.push(handler);
-
-		// Return unsubscribe function
-		return () => {
-			const handlers = this.handlers.get(eventType);
-			if (handlers) {
-				const index = handlers.indexOf(handler);
-				if (index !== -1) {
-					handlers.splice(index, 1);
-				}
-			}
-		};
+		return this.addHandler(eventType, callback, false);
 	}
 
 	/**
@@ -41,13 +21,24 @@ class EventBus<EventTypes> {
 		eventType: E,
 		callback: (data: EventTypes[E]) => void
 	): () => void {
+		return this.addHandler(eventType, callback, true);
+	}
+
+	/**
+	 * Internal method to add an event handler
+	 */
+	private addHandler<E extends keyof EventTypes>(
+		eventType: E,
+		callback: (data: EventTypes[E]) => void,
+		once: boolean
+	): () => void {
 		if (!this.handlers.has(eventType)) {
 			this.handlers.set(eventType, []);
 		}
 
 		const handler: EventHandler<EventTypes[E]> = {
 			callback,
-			once: true
+			once
 		};
 
 		this.handlers.get(eventType)!.push(handler);
@@ -68,7 +59,6 @@ class EventBus<EventTypes> {
 		eventType: E,
 		data: EventTypes[E] = undefined as EventTypes[E]
 	): void {
-		console.log("Publishing event", this.handlers);
 		const handlers = this.handlers.get(eventType);
 		if (!handlers) return;
 

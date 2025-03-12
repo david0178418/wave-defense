@@ -17,14 +17,21 @@ export class SystemBuilder<
 	private processFunction?: ProcessFunction<ComponentTypes, EventTypes, ResourceTypes, Queries>;
 	private attachFunction?: LifecycleFunction<ComponentTypes, EventTypes, ResourceTypes>;
 	private detachFunction?: LifecycleFunction<ComponentTypes, EventTypes, ResourceTypes>;
-	private eventHandlers?: any;
+	private eventHandlers?: {
+		[EventName in keyof EventTypes]?: {
+			handler(
+				data: EventTypes[EventName],
+				entityManager: EntityManager<ComponentTypes>,
+				resourceManager: ResourceManager<ResourceTypes>,
+				eventBus: EventBus<EventTypes>,
+			): void;
+		};
+	};
 
 	constructor(
 		private _label: string,
 		private _bundle = new Bundle<ComponentTypes, EventTypes, ResourceTypes>()
-	) {
-		console.log(`Adding system ${this._label}`);
-	}
+	) {}
 
 	get label() {
 		return this._label;
