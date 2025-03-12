@@ -75,7 +75,6 @@ interface Events {
 
 export default
 function combatFeature() {
-	
 	return new Bundle<Components, Events>()
 		// Process damage application
 		.addSystem('damage-dealing')
