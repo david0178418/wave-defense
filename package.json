@@ -14,7 +14,7 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
-    "ecspresso": "^0.0.2",
+    "ecspresso": "^0.0.3",
     "pixi.js": "^8.8.1"
   }
 }
