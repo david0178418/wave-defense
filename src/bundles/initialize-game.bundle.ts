@@ -2,34 +2,8 @@ import { Bundle } from 'ecspresso';
 import { Application, Container, Graphics } from 'pixi.js';
 import { randomInt } from '@/utils';
 
-interface Resources {
-	pixi: Application;
-	activeKeyMap: ActiveControlMap;
-	worldContainer: Container;
-	uiContainer: Container;
-	config: {
-		panSpeed: number;
-		mapSize: number;
-	};
-}
-
-interface Events {
-	initializePlayer: true;
-	initializeMap: true;
-	initializeGame: {
-		game: any; // Using any here to avoid circular reference
-	};
-}
-
-interface ActiveControlMap {
-	up: boolean;
-	down: boolean;
-	left: boolean;
-	right: boolean;
-}
-
 export function initializeGameBundle() {
-	return new Bundle<{}, Events, Resources>()
+	return new Bundle<Components, Events, Resources>()
 		.addSystem('initialize-game')
 		.setEventHandlers({
 			initializeGame: {

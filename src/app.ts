@@ -1,27 +1,16 @@
 import ECSpresso, { Bundle } from 'ecspresso';
 import { initializeGameBundle } from '@/bundles/initialize-game.bundle';
-import {
-	Application,
-	Container,
-} from 'pixi.js';
+import { Container } from 'pixi.js';
+import type { ActiveControlMap } from './types';
 
-interface Resources {
-	pixi: Application;
-	activeKeyMap: ActiveControlMap;
-	worldContainer: Container;
-	uiContainer: Container;
-	config: {
-		panSpeed: number;
-		mapSize: number;
-	};
-}
 
-interface Events {
-	initializePlayer: true;
-	initializeMap: true;
-	initializeGame: {
-		game: typeof game;
-	};
+// Feels gross. Need to find better way to handle this information
+declare global {
+	interface Events {
+		initializeGame: {
+			game: typeof game;
+		};
+	}
 }
 
 const game = new ECSpresso<{}, Events, Resources>();
@@ -41,7 +30,7 @@ game
 	.publish('initializeGame', { game });
 
 function mapPanningBundle() {
-	return new Bundle<{}, Events, Resources>()
+	return new Bundle<Components, Events, Resources>()
 		.addSystem('map-panning')
 		.setProcess((_data, _deltaTime, _entityManager, resourceManager, _eventBus) => {
 			const worldContainer = resourceManager.get('worldContainer');
@@ -84,13 +73,6 @@ function mapPanningBundle() {
 			worldContainer.position.set(worldX, worldY);
 		})
 		.bundle;
-}
-
-interface ActiveControlMap {
-	up: boolean;
-	down: boolean;
-	left: boolean;
-	right: boolean;
 }
 
 function controlMap(): ActiveControlMap {
