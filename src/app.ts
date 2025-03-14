@@ -39,6 +39,4 @@ game
 		gameStateBundle(),
 	)
 	.eventBus
-	.publish('initializeGame', {
-		game,
-	});
+	.publish('initializeGame', { game });
