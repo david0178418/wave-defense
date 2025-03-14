@@ -1,4 +1,4 @@
-import ECSpresso from 'ecspresso';
+import ECSpresso, { Bundle } from 'ecspresso';
 import { initializeGameBundle } from '@/bundles/initialize-game.bundle';
 import { mapPanningBundle } from '@/bundles/map-panning.bundle';
 
@@ -7,6 +7,13 @@ declare global {
 	interface Events {
 		initializeGame: {
 			game: typeof game;
+		};
+	}
+
+	interface Resources {
+		config: {
+			mapSize: number;
+			panSpeed: number;
 		};
 	}
 }
@@ -21,6 +28,17 @@ game
 	.install(
 		initializeGameBundle(),
 		mapPanningBundle(),
+		generatePlanetsBundle(),
 	)
 	.eventBus
 	.publish('initializeGame', { game });
+
+
+function generatePlanetsBundle() {
+	return new Bundle<Components, Events, Resources>()
+		.addSystem('generate-planets')
+		.setProcess((_data, _deltaTime, _entityManager, _resourceManager, _eventBus) => {
+			// Generate planet entities
+		})
+		.bundle;
+}

@@ -1,6 +1,3 @@
-import type { Container } from "pixi.js";
-
-import type { Application } from "pixi.js";
 
 export type Enum<T extends object> = T[keyof T];
 
@@ -8,21 +5,9 @@ export type Enum<T extends object> = T[keyof T];
 // have the orgnaizational issues...?
 
 declare global {
-	 interface Resources {
-		pixi: Application;
-		activeKeyMap: ActiveControlMap;
-		worldContainer: Container;
-		uiContainer: Container;
-		config: {
-			panSpeed: number;
-			mapSize: number;
-		};
-	}
+	 interface Resources {}
 
-	interface Events {
-		initializePlayer: true;
-		initializeMap: true;
-	}
+	interface Events {}
 
 	interface Components {}
 }

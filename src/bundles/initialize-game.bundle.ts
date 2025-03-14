@@ -1,7 +1,32 @@
 import { Bundle } from 'ecspresso';
-import { Application, Container, Graphics } from 'pixi.js';
-import { randomInt } from '@/utils';
+import { Application, Container, Graphics, Sprite } from 'pixi.js';
+import { randomInt, range } from '@/utils';
 import type { ActiveControlMap } from '@/types';
+
+declare global {
+	interface Components {
+		sprite: Sprite;
+		selected: true;
+		selectable: true;
+
+		position: {
+			x: number;
+			y: number;
+		};
+
+		clickBounds: {
+			x: number;
+			y: number;
+			width: number;
+			height: number;
+		};
+
+		ownable: true;
+		hovered: true;
+		hoverable: true;
+		owner: 'player' | 'ai' | 'neutral';
+	}
+}
 
 export function initializeGameBundle() {
 	return new Bundle<Components, Events, Resources>()
@@ -45,7 +70,7 @@ export function initializeGameBundle() {
 		.addSystem('initialize-map')
 		.setEventHandlers({
 			initializeMap: {
-				handler(_data, _entityManager, resourceManager, _eventBus) {
+				handler(_data, entityManager, resourceManager, _eventBus) {
 					const { mapSize } = resourceManager.get('config');
 					const worldContainer = resourceManager.get('worldContainer');
 					const map = new Container()
@@ -56,16 +81,62 @@ export function initializeGameBundle() {
 						);
 					
 					// spinkle stars about
-					for (let i = 0; i < 100; i++) {
-						const x = Math.random() * mapSize;
-						const y = Math.random() * mapSize;
+					range(100).forEach(() => {
+						const x = randomInt(mapSize);
+						const y = randomInt(mapSize);
 						
 						map.addChild(
 							new Graphics()
-								.circle(x, y, 2 + randomInt(3))
+								.circle(x, y, randomInt(2, 5))
 								.fill(0xFFFFFF)
 						);
-					}
+					});
+
+					range(10).forEach(() => {
+						const entity = entityManager.createEntity();
+						const edgeBuffer = 100;
+						const radius = randomInt(20, 60);
+						const x = randomInt(edgeBuffer, mapSize - edgeBuffer);
+						const y = randomInt(edgeBuffer, mapSize - edgeBuffer);
+
+						// Create graphics object and render it to texture
+						const graphics = new Graphics()
+							.circle(0, 0, radius)
+							.fill(randomInt(0xFFFFFF));
+							
+						// Convert graphics to texture and create sprite
+						const texture = resourceManager.get('pixi').renderer.generateTexture(graphics);
+						const sprite = new Sprite(texture);
+						
+						// Position the sprite (as graphics was centered at 0,0)
+						sprite.x = x;
+						sprite.y = y;
+						sprite.anchor.set(0.5);
+						
+						sprite.interactive = true;
+						sprite.on('mouseenter', () => {
+							sprite.scale.set(1.1);
+							document.body.style.cursor = 'pointer';
+						});
+
+						sprite.on('mouseleave', () => {
+							sprite.scale.set(1);
+							document.body.style.cursor = 'default';
+						});
+						
+						map.addChild(sprite);
+						entityManager
+							.addComponent(entity, 'sprite', sprite)
+							.addComponent(entity, 'selectable', true)
+							.addComponent(entity, 'position', { x, y })
+							.addComponent(entity, 'clickBounds', { x: x - radius, y: y - radius, width: radius * 2, height: radius * 2 })
+							.addComponent(entity, 'clickBounds', {
+								x: x - radius,
+								y: y - radius,
+								width: radius * 2,
+								height: radius * 2,
+							});
+					});
 
 					worldContainer.addChild(map);
 				},

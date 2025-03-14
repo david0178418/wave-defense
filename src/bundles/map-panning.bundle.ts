@@ -1,4 +1,20 @@
+import type { ActiveControlMap } from '@/types';
 import { Bundle } from 'ecspresso';
+import type { Application, Container } from 'pixi.js';
+
+
+declare global {
+	interface Resources {
+		pixi: Application;
+		activeKeyMap: ActiveControlMap;
+		worldContainer: Container;
+		uiContainer: Container;
+	}
+	interface Events {
+		initializePlayer: true;
+		initializeMap: true;
+	}
+}
 
 export function mapPanningBundle() {
 	return new Bundle<Components, Events, Resources>()
