@@ -1,7 +1,7 @@
 import type { Sprite } from "pixi.js";
-import { Bundle } from "../lib/simple-ecs";
+import { Bundle } from "ecspresso";
 import type { EntityType } from "../types";
-import type { Position, Velocity } from "./movement.bundle";
+import type { Position, Velocity } from "./physics.bundle";
 
 export
 interface Health {

@@ -1,5 +1,5 @@
 import type { Sprite } from "pixi.js";
-import { Bundle } from "../../lib/simple-ecs";
+import { Bundle, mergeBundles } from "ecspresso";
 import { EntityClassification, type GameOver } from "../../types";
 import type { Invincible } from "../health.bundle";
 import damageEventsBundle from "./damage-events.bundle";
@@ -12,7 +12,6 @@ import type {
 	EntityDefeated,
 	Heath,
 } from "./combat.bundle.types";
-import { mergeBundles } from "../../lib/simple-ecs/bundle";
 
 interface Components {
 	health: Heath;

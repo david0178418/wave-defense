@@ -1,7 +1,7 @@
-import { Bundle } from "../lib/simple-ecs";
+import { Bundle } from "ecspresso";
 import type { EntityType } from "../types";
 import type { Collision, EntityCollision, Hitbox } from "./combat.bundle/combat.bundle.types";
-import type { Position } from "./movement.bundle";
+import type { Position } from "./physics.bundle";
 
 
 interface Components {

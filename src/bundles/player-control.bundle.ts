@@ -1,5 +1,5 @@
-import { Bundle } from "../lib/simple-ecs";
-import type { Acceleration, Speed } from "./movement.bundle";
+import { Bundle } from "ecspresso";
+import type { Acceleration, Speed } from "./physics.bundle";
 
 interface Components {
 	player: true;

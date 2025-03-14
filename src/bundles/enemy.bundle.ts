@@ -1,8 +1,8 @@
 import { Container, Sprite, Texture } from "pixi.js";
-import { Bundle  } from "../lib/simple-ecs";
+import { Bundle  } from "ecspresso";
 import { EntityClassification, type ConfigResource, type EntityType } from "../types";
-import type { MaxVelocity, Position, Velocity } from "./movement.bundle";
-import type { Drag } from "./movement.bundle";
+import type { MaxVelocity, Position, Velocity } from "./physics.bundle";
+import type { Drag } from "./physics.bundle";
 import type { Health } from "./health.bundle";
 import type { Hitbox } from "./combat.bundle/combat.bundle.types";
 import { type DamageDealer, DamageType } from "./combat.bundle/combat.bundle.types";

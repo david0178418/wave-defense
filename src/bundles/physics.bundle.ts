@@ -1,4 +1,4 @@
-import { Bundle } from "../lib/simple-ecs";
+import { Bundle } from "ecspresso";
 
 export
 type Frozen = true;
@@ -46,10 +46,11 @@ interface Components {
 	acceleration: Acceleration;
 	drag: Drag;
 	maxVelocity: MaxVelocity;
+	falling: true;
 }
 
 export default
-function movementBundle() {
+function physicsBundle() {
 	return new Bundle<Components>()
 		.addSystem('movement-system')
 		.addQuery('positionEntities', {

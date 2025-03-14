@@ -1,7 +1,7 @@
 import { Application, Sprite, Texture, Container, Graphics, Text } from "pixi.js";
-import { Bundle } from "../lib/simple-ecs";
+import { Bundle } from "ecspresso";
 import { EntityClassification, type EntityType, type GameOver, type initializeMap, type initializePlayer } from "../types";
-import type { Position, Acceleration, Drag, MaxVelocity, Speed, Velocity } from "./movement.bundle";
+import type { Position, Acceleration, Drag, MaxVelocity, Speed, Velocity } from "./physics.bundle";
 import type { Health, Invincible } from "./health.bundle";
 import type { InitializeGame } from "../app";
 import { type Defense, DamageType, type Hitbox } from "./combat.bundle/combat.bundle.types";
@@ -21,7 +21,8 @@ interface Components {
 	defense: Defense;
 	invincible: Invincible;
 	enemy: true;
-	frozen: boolean;
+	frozen: true;
+	falling: true;
 }
 
 interface Events {
@@ -147,6 +148,7 @@ function gameStateBundle() {
 						.addComponent(player, 'player', true)
 						.addComponent(player, 'sprite', sprite)
 						.addComponent(player, 'position', { x: startX, y: startY })
+						.addComponent(player, 'falling', true)
 						.addComponent(player, 'velocity', { x: 0, y: 0 })
 						.addComponent(player, 'drag', { x: 3, y: 3 })
 						.addComponent(player, 'speed', { x: 3000, y: 3000 })

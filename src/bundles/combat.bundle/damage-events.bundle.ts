@@ -1,5 +1,5 @@
 import type { Sprite } from "pixi.js";
-import { Bundle } from "../../lib/simple-ecs";
+import { Bundle } from "ecspresso";
 import { EntityClassification, type GameOver } from "../../types";
 import type { Invincible } from "../health.bundle";
 import {

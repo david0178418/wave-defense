@@ -1,5 +1,5 @@
-import SimpleECS from "./lib/simple-ecs";
-import movementBundle from "./bundles/movement.bundle";
+import ECSpresso from "ecspresso";
+import physicsBundle from "./bundles/physics.bundle";
 import playerControlBundle from "./bundles/player-control.bundle";
 import enemyBundle from "./bundles/enemy.bundle";
 import healthBundle from "./bundles/health.bundle";
@@ -21,7 +21,7 @@ interface InitializeGame {
 	game: typeof game;
 };
 
-const game = new SimpleECS<{}, Events, Resources>();
+const game = new ECSpresso<{}, Events, Resources>();
 
 game
 	.addResource('config', {
@@ -29,14 +29,16 @@ game
 		deadzonePercentWidth: 0.2,
 		deadzonePercentHeight: 0.2,
 	})
-	.install(combatBundle())
-	.install(collisionBundle())
-	.install(movementBundle())
-	.install(playerControlBundle())
-	.install(enemyBundle())
-	.install(healthBundle())
-	.install(gameStateBundle());
-
-game.eventBus.publish('initializeGame', {
-	game,
-});
+	.install(
+		combatBundle(),
+		collisionBundle(),
+		physicsBundle(),
+		playerControlBundle(),
+		enemyBundle(),
+		healthBundle(),
+		gameStateBundle(),
+	)
+	.eventBus
+	.publish('initializeGame', {
+		game,
+	});
