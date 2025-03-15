@@ -6,11 +6,11 @@ export
 function selectionBundle() {
 	return new Bundle<Components, Events, Resources>()
 	.addSystem('selection')
-	.setProcess((_data, _deltaTime, _entityManager, resourceManager, eventBus) => {
-	})
+	// .setProcess((_data, _deltaTime, _ecs) => {
+	// })
 	.setEventHandlers({
 		selectEntity: {
-			handler(data, entityManager, resourceManager, eventBus) {
+			handler(data, {entityManager, resourceManager, eventBus}) {
 				// Add the "selected" component to the entity And add a circle graphic to the entity
 				const {
 					entity,
@@ -29,7 +29,7 @@ function selectionBundle() {
 			},
 		},
 		deselect: {
-			handler(data, entityManager, resourceManager, eventBus) {
+			handler(data, {entityManager, resourceManager, eventBus}) {
 				const {
 					entity,
 					sprite,

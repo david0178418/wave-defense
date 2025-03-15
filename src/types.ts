@@ -1,15 +1,72 @@
+import type ECSpresso from "ecspresso";
+import type { Entity } from "ecspresso";
+import type { Application, Container, Graphics, Sprite } from "pixi.js";
 
 export type Enum<T extends object> = T[keyof T];
 
 // TODO: Maybe resources and events are fine centralized? Maybe only components
 // have the orgnaizational issues...?
 
-declare global {
-	 interface Resources {}
+export
+type Game = ECSpresso<Components, Events, Resources>;
 
-	interface Events {}
+export
+interface Components {
+	selectable: true;
+	sprite: Sprite;
 
-	interface Components {}
+	selected: {
+		graphic: Graphics;
+	};
+
+	ownable: true;
+	hovered: true;
+	hoverable: true;
+	owner: 'player' | 'ai' | 'neutral';
+
+	position: {
+		x: number;
+		y: number;
+	};
+
+	clickBounds: {
+		x: number;
+		y: number;
+		width: number;
+		height: number;
+	};
+}
+
+export
+interface Events {
+	initializePlayer: true;
+	initializeMap: true;
+	populateWorld: true;
+	initializeGame: true;
+	selectEntity: {
+		entity: Entity<Components>;
+		sprite: Sprite;
+	};
+	deselect: {
+		entity: Entity<Components>;
+		sprite: Sprite;
+		selectedGraphic: Graphics;
+	};
+}
+
+export
+interface Resources {
+	uiContainer: Container;
+	worldContainer: Container;
+	background: Container;
+	foreground: Container;
+	mapContainer: Container;
+	activeKeyMap: ActiveControlMap;
+	pixi: Application;
+	config: {
+		mapSize: number;
+		panSpeed: number;
+	};
 }
 
 export

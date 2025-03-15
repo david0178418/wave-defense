@@ -1,44 +1,39 @@
 import { Bundle } from 'ecspresso';
-import { Application, Container, Graphics, Sprite } from 'pixi.js';
+import { Application, Container, Graphics } from 'pixi.js';
 import { randomInt, range } from '@/utils';
-import type { ActiveControlMap } from '@/types';
-
-declare global {
-	interface Components {
-		sprite: Sprite;
-		selected: true;
-		selectable: true;
-
-		position: {
-			x: number;
-			y: number;
-		};
-
-		clickBounds: {
-			x: number;
-			y: number;
-			width: number;
-			height: number;
-		};
-
-		ownable: true;
-		hovered: true;
-		hoverable: true;
-		owner: 'player' | 'ai' | 'neutral';
-	}
-}
+import type { ActiveControlMap, Components, Events, Resources } from '@/types';
+import createPlanet from '@/entities/planet';
 
 export function initializeGameBundle() {
 	return new Bundle<Components, Events, Resources>()
 		.addSystem('initialize-game')
 		.setEventHandlers({
 			initializeGame: {
-				async handler({ game }, entityManager, resourceManager, eventBus) {
+				async handler(_data, ecs) {
+					const { resourceManager, eventBus } = ecs;
 					console.log('Initializing game');
+					const { mapSize } = resourceManager.get('config');
+					const worldContainer = new Container();
+					const map = new Container();
+					const background = new Container({isRenderGroup: true});
+					const foreground = new Container({ isRenderGroup: true });
 
-					resourceManager.add('worldContainer', new Container())
-					resourceManager.add('activeKeyMap', controlMap())
+					resourceManager.add('worldContainer', worldContainer);
+					resourceManager.add('activeKeyMap', controlMap());
+					resourceManager.add('background', background);
+					resourceManager.add('foreground', foreground);
+					resourceManager.add('mapContainer', map);
+
+					background.addChild(
+						new Graphics()
+							.rect(0, 0, mapSize, mapSize)
+							.fill(0x000000)
+					);
+
+					map.addChild(background, foreground)
+					worldContainer.addChild(map);
 					const pixi = new Application();
+
 
 					await pixi.init({
 						background: '#1099bb',
@@ -46,10 +41,9 @@ export function initializeGameBundle() {
 					});
 
 					pixi.ticker.add(ticker => {
-						game.update(ticker.deltaMS / 1000);
+						ecs.update(ticker.deltaMS / 1000);
 					});
-
-					const worldContainer = new Container();
+					
 					pixi.stage.addChild(worldContainer);
 					
 					const uiContainer = new Container();
@@ -62,7 +56,7 @@ export function initializeGameBundle() {
 					document.body.appendChild(pixi.canvas);
 
 					eventBus.publish('initializeMap');
-					// eventBus.publish('initializePlayer');
+					eventBus.publish('initializePlayer');
 				},
 			},
 		})
@@ -70,77 +64,44 @@ export function initializeGameBundle() {
 		.addSystem('initialize-map')
 		.setEventHandlers({
 			initializeMap: {
-				handler(_data, entityManager, resourceManager, _eventBus) {
+				handler(_data, ecs) {
+					const { resourceManager } = ecs;
 					const { mapSize } = resourceManager.get('config');
-					const worldContainer = resourceManager.get('worldContainer');
-					const map = new Container()
-						.addChild(
-							new Graphics()
-								.rect(0, 0, mapSize, mapSize)
-								.fill(0x000000)
-						);
-					
-					// spinkle stars about
+					const background = resourceManager.get('background'); // Retrieve background from resourceManager
+
+					// sprinkle stars about
 					range(100).forEach(() => {
 						const x = randomInt(mapSize);
 						const y = randomInt(mapSize);
 						
-						map.addChild(
+						background.addChild(
 							new Graphics()
 								.circle(x, y, randomInt(2, 5))
 								.fill(0xFFFFFF)
 						);
 					});
 
+					const edgeBuffer = 100;
 					range(10).forEach(() => {
-						const entity = entityManager.createEntity();
-						const edgeBuffer = 100;
-						const radius = randomInt(20, 60);
-						const x = randomInt(edgeBuffer, mapSize - edgeBuffer);
-						const y = randomInt(edgeBuffer, mapSize - edgeBuffer);
 
-						// Create graphics object and render it to texture
-						const graphics = new Graphics()
-							.circle(0, 0, radius)
-							.fill(randomInt(0xFFFFFF));
-							
-						// Convert graphics to texture and create sprite
-						const texture = resourceManager.get('pixi').renderer.generateTexture(graphics);
-						const sprite = new Sprite(texture);
-						
-						// Position the sprite (as graphics was centered at 0,0)
-						sprite.x = x;
-						sprite.y = y;
-						sprite.anchor.set(0.5);
-						
-						sprite.interactive = true;
-						sprite.on('mouseenter', () => {
-							sprite.scale.set(1.1);
-							document.body.style.cursor = 'pointer';
-						});
-
-						sprite.on('mouseleave', () => {
-							sprite.scale.set(1);
-							document.body.style.cursor = 'default';
-						});
-						
-						map.addChild(sprite);
-						entityManager
-							.addComponent(entity, 'sprite', sprite)
-							.addComponent(entity, 'selectable', true)
-							.addComponent(entity, 'position', { x, y })
-							.addComponent(entity, 'clickBounds', { x: x - radius, y: y - radius, width: radius * 2, height: radius * 2 })
-							.addComponent(entity, 'clickBounds', {
-								x: x - radius,
-								y: y - radius,
-								width: radius * 2,
-								height: radius * 2,
-							});
+						createPlanet(
+							randomInt(edgeBuffer, mapSize - edgeBuffer), 
+							randomInt(edgeBuffer, mapSize - edgeBuffer),
+							randomInt(20, 60),
+							randomInt(0xFFFFFF),
+							ecs,
+						);
 					});
-
-					worldContainer.addChild(map);
 				},
 			},
+		})
+		.bundle
+		.addSystem('populate-world')
+		.setEventHandlers({
+			populateWorld: {
+				handler(_data, {entityManager, resourceManager, eventBus}) {
+				}
+			}
 		})
 		.bundle;
 }

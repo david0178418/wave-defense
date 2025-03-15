@@ -1,25 +1,10 @@
-import type { ActiveControlMap } from '@/types';
+import type { Components, Events, Resources } from '@/types';
 import { Bundle } from 'ecspresso';
-import type { Application, Container } from 'pixi.js';
-
-
-declare global {
-	interface Resources {
-		pixi: Application;
-		activeKeyMap: ActiveControlMap;
-		worldContainer: Container;
-		uiContainer: Container;
-	}
-	interface Events {
-		initializePlayer: true;
-		initializeMap: true;
-	}
-}
 
 export function mapPanningBundle() {
 	return new Bundle<Components, Events, Resources>()
 		.addSystem('map-panning')
-		.setProcess((_data, _deltaTime, _entityManager, resourceManager, _eventBus) => {
+		.setProcess((_data, _deltaTime, {entityManager, resourceManager, eventBus}) => {
 			const worldContainer = resourceManager.get('worldContainer');
 			const keyMap = resourceManager.get('activeKeyMap');
 			const pixi = resourceManager.get('pixi');
