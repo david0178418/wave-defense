@@ -14,7 +14,12 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
     "ecspresso": "^0.0.3",
-    "pixi.js": "^8.8.1"
+    "jotai": "^2.12.2",
+    "pixi.js": "^8.8.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }

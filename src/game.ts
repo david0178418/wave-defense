@@ -3,6 +3,9 @@ import { initializeGameBundle } from '@/bundles/initialize-game.bundle';
 import { mapPanningBundle } from '@/bundles/map-panning.bundle';
 import type { Components, Events, Resources } from './types';
 import { selectionBundle } from './bundles/selection.bundle';
+import bootstrapUI from './bootstrap-ui';
+
+bootstrapUI();
 
 const game = new ECSpresso<Components, Events, Resources>();
 

@@ -53,7 +53,10 @@ export function initializeGameBundle() {
 					resourceManager.add('worldContainer', worldContainer);
 					resourceManager.add('uiContainer', uiContainer);
 
-					document.body.appendChild(pixi.canvas);
+					const canvasContainerEl = document.createElement('div');
+					canvasContainerEl.id = 'canvas-container';
+					canvasContainerEl.appendChild(pixi.canvas);
+					document.body.appendChild(canvasContainerEl);
 
 					eventBus.publish('initializeMap');
 					eventBus.publish('initializePlayer');
