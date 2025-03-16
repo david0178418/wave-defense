@@ -1,4 +1,5 @@
 import type { Game } from "@/types";
+import { sciFiNameGenerator } from "@/utils";
 import { Graphics, Sprite } from "pixi.js";
 
 export default
@@ -52,13 +53,14 @@ function createPlanet(x: number, y: number, radius: number, color: number, ecs: 
 		.addComponent(entity, 'sprite', sprite)
 		.addComponent(entity, 'selectable', true)
 		.addComponent(entity, 'position', { x, y })
+		.addComponent(entity, 'name', sciFiNameGenerator.generate())
 		.addComponent(entity, 'clickBounds', {
 			x: x - radius,
 			y: y - radius,
 			width: radius * 2,
 			height: radius * 2,
 		});
-	
+
 	resourceManager.get('foreground').addChild(sprite);
 	
 	return entity;

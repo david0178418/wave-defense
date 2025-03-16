@@ -4,15 +4,16 @@ export default
 function SelectedEntities() {
 	const selectedEntities = useSelectedEntities();
 
-	return <div className="selected-entities">
-		{selectedEntities.length === 0 && <p>No entities selected</p>}
+	if(!selectedEntities.length) return null;
+
+	return <div className="bg-white">
 		{selectedEntities.map((entity, index) => (
 			<div
 				key={index}
 				className="selected-entity"
 			>
 				<button onClick={() => removeSelectedEntity(entity)}>
-					{entity.id}
+					{entity.components.name}
 				</button>
 			</div>
 		))}
