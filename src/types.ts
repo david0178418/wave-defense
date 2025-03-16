@@ -47,7 +47,7 @@ interface Events {
 		entity: Entity<Components>;
 		sprite: Sprite;
 	};
-	deselect: {
+	deselectEntity: {
 		entity: Entity<Components>;
 		sprite: Sprite;
 		selectedGraphic: Graphics;

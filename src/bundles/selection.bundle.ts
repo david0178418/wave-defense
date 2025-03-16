@@ -1,4 +1,5 @@
 import type { Components, Events, Resources } from "@/types";
+import { addSelectedEntity, removeSelectedEntity } from "@/ui-state";
 import { Bundle } from "ecspresso";
 import { Graphics } from "pixi.js";
 
@@ -10,7 +11,7 @@ function selectionBundle() {
 	// })
 	.setEventHandlers({
 		selectEntity: {
-			handler(data, {entityManager, resourceManager, eventBus}) {
+			handler(data, { entityManager }) {
 				// Add the "selected" component to the entity And add a circle graphic to the entity
 				const {
 					entity,
@@ -26,15 +27,18 @@ function selectionBundle() {
 					graphic: selectedGraphic,
 				});
 				sprite.addChild(selectedGraphic);
+				addSelectedEntity(entity);
 			},
 		},
-		deselect: {
+		deselectEntity: {
 			handler(data, {entityManager, resourceManager, eventBus}) {
 				const {
 					entity,
 					sprite,
 					selectedGraphic,
 				} = data;
+
+				removeSelectedEntity(entity);
 				entityManager.removeComponent(entity.id, 'selected');
 
 				sprite.removeChild(selectedGraphic);

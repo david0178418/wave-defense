@@ -5,11 +5,11 @@ import type { Components, Events, Resources } from './types';
 import { selectionBundle } from './bundles/selection.bundle';
 import bootstrapUI from './bootstrap-ui';
 
-bootstrapUI();
+const ecs = new ECSpresso<Components, Events, Resources>();
 
-const game = new ECSpresso<Components, Events, Resources>();
+bootstrapUI(ecs); 
 
-game
+ecs
 	.addResource('config', {
 		mapSize: 2000,
 		panSpeed: 500,

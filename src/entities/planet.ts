@@ -35,7 +35,7 @@ function createPlanet(x: number, y: number, radius: number, color: number, ecs: 
 
 	sprite.on('click', () => {
 		if(entity.components.selected) {
-			eventBus.publish('deselect', {
+			eventBus.publish('deselectEntity', {
 				entity,
 				sprite: entity.components.sprite!,
 				selectedGraphic: entity.components.selected.graphic,
