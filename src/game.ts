@@ -1,3 +1,4 @@
+import './styles.css';
 import ECSpresso, { Bundle } from 'ecspresso';
 import { initializeGameBundle } from '@/bundles/initialize-game.bundle';
 import { mapPanningBundle } from '@/bundles/map-panning.bundle';
@@ -7,7 +8,7 @@ import bootstrapUI from './bootstrap-ui';
 
 const ecs = new ECSpresso<Components, Events, Resources>();
 
-bootstrapUI(ecs); 
+bootstrapUI(ecs);
 
 ecs
 	.addResource('config', {
@@ -22,7 +23,6 @@ ecs
 	)
 	.eventBus
 	.publish('initializeGame');
-
 
 function generatePlanetsBundle() {
 	return new Bundle<Components, Events, Resources>()
