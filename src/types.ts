@@ -12,28 +12,28 @@ type Game = ECSpresso<Components, Events, Resources>;
 
 export
 interface Components {
+	hoverable: true;
+	hovered: true;
+	name: string;
+	ownable: true;
+	owner: 'player' | 'ai' | 'neutral';
 	selectable: true;
 	sprite: Sprite;
-
-	selected: {
-		graphic: Graphics;
-	};
-
-	ownable: true;
-	hovered: true;
-	hoverable: true;
-	owner: 'player' | 'ai' | 'neutral';
-
-	position: {
-		x: number;
-		y: number;
-	};
 
 	clickBounds: {
 		x: number;
 		y: number;
 		width: number;
 		height: number;
+	};
+
+	position: {
+		x: number;
+		y: number;
+	};
+
+	selected: {
+		graphic: Graphics;
 	};
 }
 
