@@ -64,8 +64,11 @@ interface Resources {
 	activeKeyMap: ActiveControlMap;
 	pixi: Application;
 	config: {
-		mapSize: number;
 		panSpeed: number;
+		mapSize: {
+			width: number;
+			height: number;
+		};
 	};
 }
 

@@ -3,6 +3,7 @@ import { Application, Container, Graphics } from 'pixi.js';
 import { randomInt, range } from '@/utils';
 import type { ActiveControlMap, Components, Events, Resources } from '@/types';
 import createPlanet from '@/entities/planet';
+import bootstrapUI from '@/bootstrap-ui';
 
 export function initializeGameBundle() {
 	return new Bundle<Components, Events, Resources>()
@@ -26,7 +27,12 @@ export function initializeGameBundle() {
 
 					background.addChild(
 						new Graphics()
-							.rect(0, 0, mapSize, mapSize)
+							.rect(
+								0,
+								0,
+								mapSize.width,
+								mapSize.height,
+							)
 							.fill(0x000000)
 					);
 
@@ -58,6 +64,12 @@ export function initializeGameBundle() {
 					canvasContainerEl.appendChild(pixi.canvas);
 					document.body.appendChild(canvasContainerEl);
 
+					const uiElement = document.createElement('div');
+					uiElement.id = 'ui-container';
+					document.body.appendChild(uiElement);
+
+					bootstrapUI(uiElement, ecs);
+
 					eventBus.publish('initializeMap');
 					eventBus.publish('initializePlayer');
 				},
@@ -74,8 +86,8 @@ export function initializeGameBundle() {
 
 					// sprinkle stars about
 					range(100).forEach(() => {
-						const x = randomInt(mapSize);
-						const y = randomInt(mapSize);
+						const x = randomInt(mapSize.width);
+						const y = randomInt(mapSize.height);
 						
 						background.addChild(
 							new Graphics()
@@ -88,8 +100,8 @@ export function initializeGameBundle() {
 					range(10).forEach(() => {
 
 						createPlanet(
-							randomInt(edgeBuffer, mapSize - edgeBuffer), 
-							randomInt(edgeBuffer, mapSize - edgeBuffer),
+							randomInt(edgeBuffer, mapSize.width - edgeBuffer), 
+							randomInt(edgeBuffer, mapSize.height - edgeBuffer),
 							randomInt(20, 60),
 							randomInt(0xFFFFFF),
 							ecs,

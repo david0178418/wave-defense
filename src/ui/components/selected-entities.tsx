@@ -6,13 +6,13 @@ function SelectedEntities() {
 
 	if(!selectedEntities.length) return null;
 
-	return <div className="bg-white">
+	return <div >
 		{selectedEntities.map((entity, index) => (
 			<div
 				key={index}
-				className="selected-entity"
+				className="bg-white inline-block mr-5"
 			>
-				<button onClick={() => removeSelectedEntity(entity)}>
+				<button className="cursor-pointer" onClick={() => removeSelectedEntity(entity)}>
 					{entity.components.name}
 				</button>
 			</div>

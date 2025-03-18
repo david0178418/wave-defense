@@ -4,16 +4,16 @@ import { initializeGameBundle } from '@/bundles/initialize-game.bundle';
 import { mapPanningBundle } from '@/bundles/map-panning.bundle';
 import type { Components, Events, Resources } from './types';
 import { selectionBundle } from './bundles/selection.bundle';
-import bootstrapUI from './bootstrap-ui';
 
 const ecs = new ECSpresso<Components, Events, Resources>();
 
-bootstrapUI(ecs);
-
 ecs
 	.addResource('config', {
-		mapSize: 2000,
 		panSpeed: 500,
+		mapSize: {
+			width: 2000,
+			height: 2000,
+		},
 	})
 	.install(
 		initializeGameBundle(),

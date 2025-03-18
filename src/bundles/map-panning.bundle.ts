@@ -34,8 +34,8 @@ export function mapPanningBundle() {
 				worldX -= panAmount;
 			}
 			
-			const minX = -(mapSize - viewWidth);
-			const minY = -(mapSize - viewHeight);
+			const minX = -(mapSize.width - viewWidth);
+			const minY = -(mapSize.height - viewHeight);
 			const maxX = 0;
 			const maxY = 0;
 			
