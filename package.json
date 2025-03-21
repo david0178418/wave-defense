@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun --hot ./index.html",
+    "dev": "bun ./index.html",
     "tsc": "bunx tsc"
   },
   "devDependencies": {
@@ -14,14 +14,14 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
-    "@types/react": "^19.0.10",
+    "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
     "bun-plugin-tailwind": "^0.0.15",
-    "ecspresso": "^0.0.7",
+    "ecspresso": "^0.0.8",
     "jotai": "^2.12.2",
-    "pixi.js": "^8.8.1",
+    "pixi.js": "^8.9.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwindcss": "^4.0.14"
+    "tailwindcss": "^4.0.15"
   }
 }
