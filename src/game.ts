@@ -5,7 +5,12 @@ import { mapPanningBundle } from '@/bundles/map-panning.bundle';
 import type { Components, Events, Resources } from './types';
 import { selectionBundle } from './bundles/selection.bundle';
 
-const ecs = new ECSpresso<Components, Events, Resources>();
+const ecs = ECSpresso.create<Components, Events, Resources>()
+	.withBundle(initializeGameBundle())
+	.withBundle(mapPanningBundle())
+	.withBundle(generatePlanetsBundle())
+	.withBundle(selectionBundle())
+	.build();
 
 ecs
 	.addResource('config', {
@@ -15,12 +20,6 @@ ecs
 			height: 2000,
 		},
 	})
-	.install(
-		initializeGameBundle(),
-		mapPanningBundle(),
-		generatePlanetsBundle(),
-		selectionBundle()
-	)
 	.eventBus
 	.publish('initializeGame');
 
