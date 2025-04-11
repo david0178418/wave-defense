@@ -18,11 +18,9 @@ function UI({ ecs }: Props) {
 	}, []);
 
 	return (
-		<>
-			<Provider store={store}>
-				<SelectedEntities />
-			</Provider>
-		</>
+		<Provider store={store}>
+			<SelectedEntities />
+		</Provider>
 	);
 }
 

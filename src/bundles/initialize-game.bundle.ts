@@ -47,7 +47,7 @@ export function initializeGameBundle() {
 					});
 
 					pixi.ticker.add(ticker => {
-						ecs.update(ticker.deltaMS / 1000);
+						ecs.update(ticker.deltaMS / 1_000);
 					});
 					
 					pixi.stage.addChild(worldContainer);

@@ -19,7 +19,6 @@ export function addSelectedEntity(entity: Entity<Components>) {
 }
 
 export function removeSelectedEntity(entity: Entity<Components>) {
-	console.log('removeSelectedEntity', entity);
 	const currentEntities = store.get(selectedEntitiesAtom);
 
 	if(!currentEntities.find(e => e.id === entity.id)) return;
