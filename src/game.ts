@@ -5,14 +5,12 @@ import { mapPanningBundle } from '@/bundles/map-panning.bundle';
 import type { Components, Events, Resources } from './types';
 import { selectionBundle } from './bundles/selection.bundle';
 
-const ecs = ECSpresso.create<Components, Events, Resources>()
+ECSpresso.create<Components, Events, Resources>()
 	.withBundle(initializeGameBundle())
 	.withBundle(mapPanningBundle())
 	.withBundle(generatePlanetsBundle())
 	.withBundle(selectionBundle())
-	.build();
-
-ecs
+	.build()
 	.addResource('config', {
 		panSpeed: 500,
 		mapSize: {
