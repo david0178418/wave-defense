@@ -33,7 +33,9 @@ export function initializeGameBundle() {
 								mapSize.width,
 								mapSize.height,
 							)
-							.fill(0x000000)
+							.fill(0x873e23
+
+							)
 					);
 
 					map.addChild(background, foreground)
