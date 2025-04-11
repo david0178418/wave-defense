@@ -40,11 +40,41 @@ export function initializeGameBundle() {
 					worldContainer.addChild(map);
 					const pixi = new Application();
 
+					// Define fixed game dimensions with 16:9 aspect ratio
+					const gameWidth = 1280;
+					const gameHeight = 720;
 
 					await pixi.init({
 						background: '#1099bb',
-						resizeTo: window,
+						width: gameWidth,
+						height: gameHeight,
+						autoDensity: true,
 					});
+
+					// Handle responsive scaling while maintaining aspect ratio
+					const resize = () => {
+						const screenWidth = window.innerWidth;
+						const screenHeight = window.innerHeight;
+
+						// Calculate scale to fit the window while maintaining aspect ratio
+						const scale = Math.min(
+							screenWidth / gameWidth,
+							screenHeight / gameHeight
+						);
+
+						// Center the app on screen
+						pixi.canvas.style.width = `${gameWidth * scale}px`;
+						pixi.canvas.style.height = `${gameHeight * scale}px`;
+						pixi.canvas.style.position = 'absolute';
+						pixi.canvas.style.left = `${(screenWidth - gameWidth * scale) / 2}px`;
+						pixi.canvas.style.top = `${(screenHeight - gameHeight * scale) / 2}px`;
+					};
+
+					// Initial resize
+					resize();
+
+					// Update the canvas size when the window is resized
+					window.addEventListener('resize', resize);
 
 					pixi.ticker.add(ticker => {
 						ecs.update(ticker.deltaMS / 1_000);
