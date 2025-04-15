@@ -20,6 +20,8 @@ export function mapPanningBundle() {
 			
 			const viewWidth = pixi.screen.width;
 			const viewHeight = pixi.screen.height;
+
+			if(!(keyMap.up || keyMap.down || keyMap.left || keyMap.right)) return;
 			
 			if (keyMap.up) {
 				worldY += panAmount;
@@ -41,7 +43,7 @@ export function mapPanningBundle() {
 			
 			worldX = Math.max(minX, Math.min(maxX, worldX));
 			worldY = Math.max(minY, Math.min(maxY, worldY));
-			
+		
 			worldContainer.position.set(worldX, worldY);
 		})
 		.bundle;

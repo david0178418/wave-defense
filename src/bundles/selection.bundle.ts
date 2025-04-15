@@ -7,8 +7,6 @@ export
 function selectionBundle() {
 	return new Bundle<Components, Events, Resources>()
 	.addSystem('selection')
-	// .setProcess((_data, _deltaTime, _ecs) => {
-	// })
 	.setEventHandlers({
 		selectEntity: {
 			handler(data, { entityManager }) {

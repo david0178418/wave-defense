@@ -31,7 +31,6 @@ interface Components {
 		x: number;
 		y: number;
 	};
-
 	selected: {
 		graphic: Graphics;
 	};
@@ -41,8 +40,7 @@ export
 interface Events {
 	initializePlayer: true;
 	initializeMap: true;
-	populateWorld: true;
-	initializeGame: true;
+	startGame: true;
 	selectEntity: {
 		entity: Entity<Components>;
 		sprite: Sprite;
@@ -65,6 +63,10 @@ interface Resources {
 	pixi: Application;
 	config: {
 		panSpeed: number;
+		screenSize: {
+			width: number;
+			height: number;
+		};
 		mapSize: {
 			width: number;
 			height: number;

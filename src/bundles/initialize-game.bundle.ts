@@ -1,159 +1,89 @@
-import { Bundle } from 'ecspresso';
+import { Bundle, ResourceManager } from 'ecspresso';
 import { Application, Container, Graphics } from 'pixi.js';
-import { randomInt, range } from '@/utils';
 import type { ActiveControlMap, Components, Events, Resources } from '@/types';
-import createPlanet from '@/entities/planet';
 import bootstrapUI from '@/bootstrap-ui';
 
 export function initializeGameBundle() {
 	return new Bundle<Components, Events, Resources>()
+		.addResource('activeKeyMap', createActiveKeyMap)
+		.addResource('worldContainer', new Container())
+		.addResource('background', new Container())
+		.addResource('uiContainer', new Container())
+		.addResource('foreground', new Container({isRenderGroup: true}))
+		.addResource('mapContainer', new Container({ isRenderGroup: true }))
+		.addResource('pixi', async (ecs) => {
+			const { screenSize } = ecs.resourceManager.get('config');
+			const pixi = new Application();
+			
+			await pixi.init({
+				background: '#1099bb',
+				width: screenSize.width,
+				height: screenSize.height,
+				autoDensity: true,
+			});
+
+			return pixi;
+		})
 		.addSystem('initialize-game')
+		.setOnInitialize(async (ecs) => {
+			const { resourceManager } = ecs;
+			const pixi = resourceManager.get('pixi');
+			const config = resourceManager.get('config');
+
+			await setupRenderGraph(resourceManager);
+			
+			bootstrapUI(ecs);
+
+			setupResponsiveScaling(pixi, config.screenSize.width, config.screenSize.height);
+
+		})
 		.setEventHandlers({
-			initializeGame: {
+			startGame: {
 				async handler(_data, ecs) {
-					const { resourceManager, eventBus } = ecs;
-					console.log('Initializing game');
-					const { mapSize } = resourceManager.get('config');
-					const worldContainer = new Container();
-					const map = new Container();
-					const background = new Container({isRenderGroup: true});
-					const foreground = new Container({ isRenderGroup: true });
-
-					resourceManager.add('worldContainer', worldContainer);
-					resourceManager.add('activeKeyMap', controlMap());
-					resourceManager.add('background', background);
-					resourceManager.add('foreground', foreground);
-					resourceManager.add('mapContainer', map);
-
-					background.addChild(
-						new Graphics()
-							.rect(
-								0,
-								0,
-								mapSize.width,
-								mapSize.height,
-							)
-							.fill(0x873e23
-
-							)
-					);
-
-					map.addChild(background, foreground)
-					worldContainer.addChild(map);
-					const pixi = new Application();
-
-					// Define fixed game dimensions with 16:9 aspect ratio
-					const gameWidth = 1280;
-					const gameHeight = 720;
-
-					await pixi.init({
-						background: '#1099bb',
-						width: gameWidth,
-						height: gameHeight,
-						autoDensity: true,
-					});
-
-					// Handle responsive scaling while maintaining aspect ratio
-					const resize = () => {
-						const screenWidth = window.innerWidth;
-						const screenHeight = window.innerHeight;
-
-						// Calculate scale to fit the window while maintaining aspect ratio
-						const scale = Math.min(
-							screenWidth / gameWidth,
-							screenHeight / gameHeight
-						);
-
-						// Center the app on screen
-						pixi.canvas.style.width = `${gameWidth * scale}px`;
-						pixi.canvas.style.height = `${gameHeight * scale}px`;
-						pixi.canvas.style.position = 'absolute';
-						pixi.canvas.style.left = `${(screenWidth - gameWidth * scale) / 2}px`;
-						pixi.canvas.style.top = `${(screenHeight - gameHeight * scale) / 2}px`;
-					};
-
-					// Initial resize
-					resize();
-
-					// Update the canvas size when the window is resized
-					window.addEventListener('resize', resize);
+					const pixi = ecs.resourceManager.get('pixi');
 
 					pixi.ticker.add(ticker => {
 						ecs.update(ticker.deltaMS / 1_000);
 					});
 					
-					pixi.stage.addChild(worldContainer);
-					
-					const uiContainer = new Container();
-					pixi.stage.addChild(uiContainer);
-					
-					resourceManager.add('pixi', pixi);
-					resourceManager.add('worldContainer', worldContainer);
-					resourceManager.add('uiContainer', uiContainer);
-
-					const canvasContainerEl = document.createElement('div');
-					canvasContainerEl.id = 'canvas-container';
-					canvasContainerEl.appendChild(pixi.canvas);
-					document.body.appendChild(canvasContainerEl);
-
-					const uiElement = document.createElement('div');
-					uiElement.id = 'ui-container';
-					document.body.appendChild(uiElement);
-
-					bootstrapUI(uiElement, ecs);
-
-					eventBus.publish('initializeMap');
-					eventBus.publish('initializePlayer');
+					ecs.eventBus.publish('initializeMap');
+					ecs.eventBus.publish('initializePlayer');
 				},
 			},
-		})
-		.bundle
-		.addSystem('initialize-map')
-		.setEventHandlers({
-			initializeMap: {
-				handler(_data, ecs) {
-					const { resourceManager } = ecs;
-					const { mapSize } = resourceManager.get('config');
-					const background = resourceManager.get('background'); // Retrieve background from resourceManager
-
-					// sprinkle stars about
-					range(100).forEach(() => {
-						const x = randomInt(mapSize.width);
-						const y = randomInt(mapSize.height);
-						
-						background.addChild(
-							new Graphics()
-								.circle(x, y, randomInt(2, 5))
-								.fill(0xFFFFFF)
-						);
-					});
-
-					const edgeBuffer = 100;
-					range(10).forEach(() => {
-
-						createPlanet(
-							randomInt(edgeBuffer, mapSize.width - edgeBuffer), 
-							randomInt(edgeBuffer, mapSize.height - edgeBuffer),
-							randomInt(20, 60),
-							randomInt(0xFFFFFF),
-							ecs,
-						);
-					});
-				},
-			},
-		})
-		.bundle
-		.addSystem('populate-world')
-		.setEventHandlers({
-			populateWorld: {
-				handler(_data, {entityManager, resourceManager, eventBus}) {
-				}
-			}
 		})
 		.bundle;
 }
 
-function controlMap(): ActiveControlMap {
+/**
+ * Sets up responsive scaling for the game canvas
+ */
+function setupResponsiveScaling(pixi: Application, gameWidth: number, gameHeight: number) {
+	const resize = () => {
+		const screenWidth = window.innerWidth;
+		const screenHeight = window.innerHeight;
+
+		// Calculate scale to fit the window while maintaining aspect ratio
+		const scale = Math.min(
+			screenWidth / gameWidth,
+			screenHeight / gameHeight
+		);
+
+		// Center the app on screen
+		pixi.canvas.style.width = `${gameWidth * scale}px`;
+		pixi.canvas.style.height = `${gameHeight * scale}px`;
+		pixi.canvas.style.position = 'absolute';
+		pixi.canvas.style.left = `${(screenWidth - gameWidth * scale) / 2}px`;
+		pixi.canvas.style.top = `${(screenHeight - gameHeight * scale) / 2}px`;
+	};
+
+	// Initial resize
+	resize();
+
+	// Update the canvas size when the window is resized
+	window.addEventListener('resize', resize);
+}
+
+function createActiveKeyMap(): ActiveControlMap {
 	const controlMap = {
 		up: false,
 		down: false,
@@ -204,4 +134,34 @@ function controlMap(): ActiveControlMap {
 	});
 
 	return controlMap;
+}
+
+async function setupRenderGraph(resourceManager: ResourceManager<Resources>) {
+	const pixi = resourceManager.get('pixi');
+	const config = resourceManager.get('config');
+
+	const worldContainer = resourceManager.get('worldContainer');
+	const mapContainer = resourceManager.get('mapContainer');
+	const background = resourceManager.get('background');
+	const foreground = resourceManager.get('foreground');
+	const uiContainer = resourceManager.get('uiContainer');
+
+	background.addChild(
+		new Graphics()
+			.rect(
+				0,
+				0,
+				config.mapSize.width,
+				config.mapSize.height,
+			)
+			.fill(0x873e23
+
+			)
+	);
+
+	mapContainer.addChild(background, foreground);
+	worldContainer.addChild(mapContainer);
+
+	pixi.stage.addChild(worldContainer);
+	pixi.stage.addChild(uiContainer);
 }
