@@ -4,7 +4,7 @@
     "": {
       "name": "waves-strategy",
       "dependencies": {
-        "@types/react": "^19.1.1",
+        "@types/react": "^19.1.2",
         "@types/react-dom": "^19.1.2",
         "bun-plugin-tailwind": "^0.0.15",
         "ecspresso": "^0.2.2",
@@ -12,7 +12,7 @@
         "pixi.js": "^8.9.1",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
-        "tailwindcss": "^4.1.3",
+        "tailwindcss": "^4.1.4",
       },
       "devDependencies": {
         "@types/bun": "latest",
@@ -51,7 +51,7 @@
 
     "earcut": ["earcut@2.2.4", "", {}, "sha512-/pjZsA1b4RPHbeWZQn66SWS8nZZWLQQ23oE3Eam7aroEFGEvwKAsJfZ9ytiEMycfzXWpca4FA9QIOehf7PocBQ=="],
 
-    "ecspresso": ["ecspresso@0.2.2", "", { "peerDependencies": { "typescript": "^5.8.3" } }, "sha512-LKa2X8n9HVJ70CxcIMPBkHHp/EV4vQoJLDLFD+SvVDFCTGwG9G9iBJGO1tBQDAdVdmS1kaENwUT+hJWWe6EZeQ=="],
+    "ecspresso": ["ecspresso@0.2.3", "", { "peerDependencies": { "typescript": "^5.8.3" } }, "sha512-Jk8W8AThmpPijR+fp+VlCQI+A6GO6koaXPi8usfvXdGGsCDbZc3CUZIVeTiB0bOKohoNo2TRMyZNQy49OLC27g=="],
 
     "eventemitter3": ["eventemitter3@5.0.1", "", {}, "sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA=="],
 
