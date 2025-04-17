@@ -154,12 +154,11 @@ async function setupRenderGraph(resourceManager: ResourceManager<Resources>) {
 				config.mapSize.width,
 				config.mapSize.height,
 			)
-			.fill(0x873e23
-
-			)
+			.fill(0x873e23)
 	);
 
-	mapContainer.addChild(background, foreground);
+	mapContainer.addChild(background);
+	mapContainer.addChild(foreground);
 	worldContainer.addChild(mapContainer);
 
 	pixi.stage.addChild(worldContainer);

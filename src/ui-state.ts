@@ -32,7 +32,7 @@ export function removeSelectedEntity(entity: Entity<Components>) {
 		?.eventBus
 		.publish('deselectEntity', {
 			entity,
-			sprite: entity.components.sprite!,
+			renderContainer: entity.components.renderContainer!,
 			selectedGraphic: entity.components.selected?.graphic!,
 		});
 }

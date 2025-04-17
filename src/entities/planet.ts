@@ -7,7 +7,6 @@ function createPlanet(x: number, y: number, radius: number, color: number, ecs: 
 	const {
 		resourceManager,
 		entityManager,
-		eventBus,
 	} = ecs;
 	const entity = entityManager.createEntity();
 
@@ -34,23 +33,11 @@ function createPlanet(x: number, y: number, radius: number, color: number, ecs: 
 		sprite.scale.set(1);
 	});
 
-	sprite.on('click', () => {
-		if(entity.components.selected) {
-			eventBus.publish('deselectEntity', {
-				entity,
-				sprite: entity.components.sprite!,
-				selectedGraphic: entity.components.selected.graphic,
-			});
-		} else {
-			eventBus.publish('selectEntity', {
-				entity,
-				sprite: entity.components.sprite!,
-			});
-		}
-	});
+	// manual click listener removed; selectionBundle now handles pointer events
 
 	entityManager
 		.addComponent(entity, 'sprite', sprite)
+		.addComponent(entity, 'renderLayer', 'foreground')
 		.addComponent(entity, 'selectable', true)
 		.addComponent(entity, 'position', { x, y })
 		.addComponent(entity, 'name', sciFiNameGenerator.generate())
@@ -61,7 +48,7 @@ function createPlanet(x: number, y: number, radius: number, color: number, ecs: 
 			height: radius * 2,
 		});
 
-	resourceManager.get('foreground').addChild(sprite);
-	
+	// sprite mounting is now managed by the render system
+
 	return entity;
 }

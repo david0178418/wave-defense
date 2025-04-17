@@ -18,7 +18,7 @@ interface Components {
 	ownable: true;
 	owner: 'player' | 'ai' | 'neutral';
 	selectable: true;
-	sprite: Sprite;
+	renderContainer: Container;
 
 	clickBounds: {
 		x: number;
@@ -31,9 +31,13 @@ interface Components {
 		x: number;
 		y: number;
 	};
+
 	selected: {
 		graphic: Graphics;
 	};
+
+	// Which display layer the sprite should be added to
+	renderLayer: 'background' | 'foreground' | 'uiContainer' | 'mapContainer' | 'worldContainer';
 }
 
 export
@@ -41,13 +45,14 @@ interface Events {
 	initializePlayer: true;
 	initializeMap: true;
 	startGame: true;
+	initializeBase: true,
 	selectEntity: {
 		entity: Entity<Components>;
-		sprite: Sprite;
+		renderContainer: Container;
 	};
 	deselectEntity: {
 		entity: Entity<Components>;
-		sprite: Sprite;
+		renderContainer: Container;
 		selectedGraphic: Graphics;
 	};
 }
