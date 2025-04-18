@@ -9,14 +9,14 @@ function selectionBundle() {
 	.addSystem('selection')
 	.setOnInitialize(({ resourceManager, entityManager, eventBus }) => {
 		const pixi = resourceManager.get('pixi');
+		const worldContainer = resourceManager.get('worldContainer');
 		// make stage interactive and cover full screen
 		pixi.stage.interactive = true;
 		pixi.stage.hitArea = new Rectangle(0, 0, pixi.screen.width, pixi.screen.height);
-		pixi.stage.on('pointerdown', (event: any) => {
-			const { x, y } = event.data.global;
-			// find first selectable entity under the click
+		pixi.stage.on('pointerdown', (event) => {
+			const { x, y } = event.getLocalPosition(worldContainer);
+
 			for (const entity of entityManager.getEntitiesWithComponents(['selectable','clickBounds', 'renderContainer'])) {
-				console.log('log', entity.id, entity.components.clickBounds);
 				const bounds = entity.components.clickBounds;
 				if (x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height) {
 					const renderContainer = entity.components.renderContainer;

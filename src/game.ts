@@ -69,6 +69,9 @@ function createBase(ecs: ECSpresso<Components, Events, Resources>) {
 	sprite.setSize(50, 50);
 	sprite.anchor.set(.5, .5);
 
+	container.interactive = true;
+	container.cursor = 'pointer';
+
 	// sprite mounting is handled by renderBundle via renderLayer component
 
 	ecs.entityManager.addComponent(entity, 'renderContainer', container);
