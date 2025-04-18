@@ -10,6 +10,7 @@ function selectionBundle() {
 	.setOnInitialize(({ resourceManager, entityManager, eventBus }) => {
 		const pixi = resourceManager.get('pixi');
 		const worldContainer = resourceManager.get('worldContainer');
+
 		// make stage interactive and cover full screen
 		pixi.stage.interactive = true;
 		pixi.stage.hitArea = new Rectangle(0, 0, pixi.screen.width, pixi.screen.height);
@@ -54,7 +55,7 @@ function selectionBundle() {
 			},
 		},
 		deselectEntity: {
-			handler(data, {entityManager}) {
+			handler(data, { entityManager }) {
 				const {
 					entity,
 					renderContainer,
