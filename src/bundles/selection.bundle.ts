@@ -3,6 +3,8 @@ import { addSelectedEntity, removeSelectedEntity } from "@/ui-state";
 import { Bundle } from "ecspresso";
 import { Graphics, Rectangle } from 'pixi.js';
 
+const DragThreshold = 10;
+
 export
 function selectionBundle() {
 	return new Bundle<Components, Events, Resources>()
@@ -32,12 +34,25 @@ function selectionBundle() {
 			const worldPos = event.getLocalPosition(worldContainer);
 			dragStartWorld = { x: worldPos.x, y: worldPos.y };
 			dragGraphics.clear();
-			dragGraphics.visible = true;
+			// don't show drag box until movement passes threshold
+			dragGraphics.visible = false;
 		});
 
 		pixi.stage.on('pointermove', (event) => {
 			if (!dragStartScreen) return;
-			isDragging = true;
+			// calculate movement delta
+			const dx = event.global.x - dragStartScreen.x;
+			const dy = event.global.y - dragStartScreen.y;
+
+			// only start dragging after threshold
+			if (!isDragging) {
+				if (Math.abs(dx) < DragThreshold && Math.abs(dy) < DragThreshold) {
+					return;
+				}
+				isDragging = true;
+				dragGraphics.visible = true;
+			}
+
 			const { x: x1, y: y1 } = dragStartScreen;
 			const x2 = event.global.x;
 			const y2 = event.global.y;
