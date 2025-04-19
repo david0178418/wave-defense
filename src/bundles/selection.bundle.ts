@@ -14,6 +14,9 @@ function selectionBundle() {
 		const worldContainer = resourceManager.get('worldContainer');
 		const uiContainer = resourceManager.get('uiContainer');
 
+		// Track entities selected during drag movement
+		const dragSelection = new Set<number>();
+
 		// add drag-selection graphics to UI container
 		let isDragging = false;
 		let dragStartScreen: { x: number; y: number } | null = null;
@@ -33,17 +36,18 @@ function selectionBundle() {
 			dragStartScreen = { x: event.global.x, y: event.global.y };
 			const worldPos = event.getLocalPosition(worldContainer);
 			dragStartWorld = { x: worldPos.x, y: worldPos.y };
+			// clear prior drag selections
+			dragSelection.clear();
 			dragGraphics.clear();
 			// don't show drag box until movement passes threshold
 			dragGraphics.visible = false;
 		});
 
 		pixi.stage.on('pointermove', (event) => {
-			if (!dragStartScreen) return;
+			if (!dragStartScreen || !dragStartWorld) return;
 			// calculate movement delta
 			const dx = event.global.x - dragStartScreen.x;
 			const dy = event.global.y - dragStartScreen.y;
-
 			// only start dragging after threshold
 			if (!isDragging) {
 				if (Math.abs(dx) < DragThreshold && Math.abs(dy) < DragThreshold) {
@@ -53,6 +57,7 @@ function selectionBundle() {
 				dragGraphics.visible = true;
 			}
 
+			// draw drag rectangle
 			const { x: x1, y: y1 } = dragStartScreen;
 			const x2 = event.global.x;
 			const y2 = event.global.y;
@@ -65,56 +70,61 @@ function selectionBundle() {
 			dragGraphics.beginFill(0x00FF00, 0.2);
 			dragGraphics.drawRect(rectX, rectY, rectW, rectH);
 			dragGraphics.endFill();
+
+			// dynamic selection toggle in world coords
+			const worldEnd = event.getLocalPosition(worldContainer);
+			const x1w = dragStartWorld.x;
+			const y1w = dragStartWorld.y;
+			const x2w = worldEnd.x;
+			const y2w = worldEnd.y;
+			const selXw = Math.min(x1w, x2w);
+			const selYw = Math.min(y1w, y2w);
+			const selWw = Math.abs(x2w - x1w);
+			const selHw = Math.abs(y2w - y1w);
+			for (const ent of entityManager.getEntitiesWithComponents(['selectable', 'clickBounds', 'renderContainer'])) {
+				const b = ent.components.clickBounds;
+				const inside = b.x + b.width >= selXw && b.x <= selXw + selWw && b.y + b.height >= selYw && b.y <= selYw + selHw;
+				if (inside && !dragSelection.has(ent.id)) {
+					// newly inside: select
+					eventBus.publish('selectEntity', { entity: ent, renderContainer: ent.components.renderContainer });
+					dragSelection.add(ent.id);
+				} else if (!inside && dragSelection.has(ent.id)) {
+					// moved out: deselect if still selected
+					const selComp = ent.components.selected;
+					if (selComp) {
+						eventBus.publish('deselectEntity', {
+							entity: ent,
+							renderContainer: ent.components.renderContainer,
+							selectedGraphic: selComp.graphic,
+						});
+					}
+					dragSelection.delete(ent.id);
+				}
+			}
 		});
 
 		pixi.stage.on('pointerup', (event) => {
 			if (!dragStartScreen || !dragStartWorld) return;
 			dragGraphics.clear();
 			dragGraphics.visible = false;
-			const worldEnd = event.getLocalPosition(worldContainer);
-
-			if (isDragging) {
-				// clear previous selections
-				for (const sel of entityManager.getEntitiesWithComponents(['selected', 'renderContainer'])) {
-					const rc = sel.components.renderContainer;
-					const sg = sel.components.selected.graphic;
-					eventBus.publish('deselectEntity', { entity: sel, renderContainer: rc, selectedGraphic: sg });
-				}
-				// compute selection box in world coords
-				const x1 = dragStartWorld.x;
-				const y1 = dragStartWorld.y;
-				const x2 = worldEnd.x;
-				const y2 = worldEnd.y;
-				const selX = Math.min(x1, x2);
-				const selY = Math.min(y1, y2);
-				const selW = Math.abs(x2 - x1);
-				const selH = Math.abs(y2 - y1);
-				// select entities inside box
-				for (const ent of entityManager.getEntitiesWithComponents(['selectable', 'clickBounds', 'renderContainer'])) {
-					const b = ent.components.clickBounds;
-					if (b.x + b.width >= selX && b.x <= selX + selW && b.y + b.height >= selY && b.y <= selY + selH) {
-						const rc2 = ent.components.renderContainer;
-						if (!ent.components.selected) {
-							eventBus.publish('selectEntity', { entity: ent, renderContainer: rc2 });
-						}
-					}
-				}
-			} else {
+			
+			if (!isDragging) {
 				// single click selection
 				const { x, y } = event.getLocalPosition(worldContainer);
 				for (const ent of entityManager.getEntitiesWithComponents(['selectable', 'clickBounds', 'renderContainer'])) {
 					const b = ent.components.clickBounds;
 					if (x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height) {
-						const rc3 = ent.components.renderContainer;
+						const rc = ent.components.renderContainer;
 						if (ent.components.selected) {
-							eventBus.publish('deselectEntity', { entity: ent, renderContainer: rc3, selectedGraphic: ent.components.selected.graphic });
+							eventBus.publish('deselectEntity', { entity: ent, renderContainer: rc, selectedGraphic: ent.components.selected.graphic });
 						} else {
-							eventBus.publish('selectEntity', { entity: ent, renderContainer: rc3 });
+							eventBus.publish('selectEntity', { entity: ent, renderContainer: rc });
 						}
 						break;
 					}
 				}
 			}
+
 			// reset drag state
 			isDragging = false;
 			dragStartScreen = null;
@@ -129,6 +139,8 @@ function selectionBundle() {
 					entity,
 					renderContainer,
 				} = data;
+
+				if(entity.components.selected) return;
 
 				const selectedGraphic = new Graphics()
 					.circle(0, 0, (renderContainer.width / 2) + 5)
@@ -150,6 +162,8 @@ function selectionBundle() {
 					renderContainer,
 					selectedGraphic,
 				} = data;
+
+				if(!entity.components.selected) return;
 
 				removeSelectedEntity(entity);
 				entityManager.removeComponent(entity.id, 'selected');
