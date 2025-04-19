@@ -21,7 +21,8 @@ const ecs = ECSpresso.create<Components, Events, Resources>()
 				initializeBase: {
 					handler(_data, ecs) {
 						
-						createBase(ecs);
+						createBase(500, 500, ecs);
+						createBase(700, 500, ecs);
 					},
 				}
 			})
@@ -47,7 +48,7 @@ ecs.eventBus.publish('startGame');
 console.log('creating base');
 ecs.eventBus.publish('initializeBase', true);
 
-function createBase(ecs: ECSpresso<Components, Events, Resources>) {
+function createBase(x: number, y: number, ecs: ECSpresso<Components, Events, Resources>) {
 	const entity = ecs.entityManager.createEntity();
 	const pixi = ecs.resourceManager.get('pixi');
 	const sprite = new Sprite(
@@ -59,8 +60,8 @@ function createBase(ecs: ECSpresso<Components, Events, Resources>) {
 	);
 	const container = new Container({
 		position: {
-			x: 500,
-			y: 500,
+			x,
+			y,
 		},
 		isRenderGroup: true,
 		children: [sprite],
