@@ -22,6 +22,8 @@ export function initializeGameBundle() {
 				autoDensity: true,
 			});
 
+			pixi.canvas.addEventListener('contextmenu', event => event.preventDefault());
+
 			return pixi;
 		})
 		.addSystem('initialize-game')

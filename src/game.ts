@@ -22,9 +22,20 @@ const ecs = ECSpresso.create<Components, Events, Resources>()
 					handler(_data, ecs) {
 						
 						createBase(500, 500, ecs);
-						createBase(700, 500, ecs);
 					},
 				}
+			})
+			.bundle
+	)
+	.withBundle(
+		new Bundle<Components, Events, Resources>()
+			.addSystem('player-units')
+			.setEventHandlers({
+				initializePlayerUnits: {
+					handler(data, ecs) {
+						createPlayerUnit(data.position.x, data.position.y, ecs);
+					},
+				},
 			})
 			.bundle
 	)
@@ -44,14 +55,26 @@ const ecs = ECSpresso.create<Components, Events, Resources>()
 await ecs.initialize();
 ecs.eventBus.publish('startGame');
 ecs.eventBus.publish('initializeBase', true);
+ecs.eventBus.publish('initializePlayerUnits', {
+	position: {
+		x: 300,
+		y: 300,
+	},
+});
+ecs.eventBus.publish('initializePlayerUnits', {
+	position: {
+		x: 700,
+		y: 700,
+	},
+});
 
-function createBase(x: number, y: number, ecs: ECSpresso<Components, Events, Resources>) {
+function createPlayerUnit(x: number, y: number, ecs: ECSpresso<Components, Events, Resources>) {
 	const entity = ecs.entityManager.createEntity();
 	const pixi = ecs.resourceManager.get('pixi');
 	const sprite = new Sprite(
 		pixi.renderer.generateTexture(
 			new Graphics()
-				.rect(0, 0, 50, 50)
+				.rect(0, 0, 25, 25)
 				.fill(0x000000)
 		)
 	);
@@ -64,7 +87,7 @@ function createBase(x: number, y: number, ecs: ECSpresso<Components, Events, Res
 		children: [sprite],
 	});
 
-	sprite.setSize(50, 50);
+	// sprite.setSize(25, 25);
 	sprite.anchor.set(.5, .5);
 
 	container.interactive = true;
@@ -74,14 +97,51 @@ function createBase(x: number, y: number, ecs: ECSpresso<Components, Events, Res
 
 	ecs.entityManager.addComponent(entity, 'renderContainer', container);
 	ecs.entityManager.addComponent(entity, 'renderLayer', 'foreground');
-	ecs.entityManager.addComponent(entity, 'position', { x: sprite.x, y: sprite.y });
-	ecs.entityManager.addComponent(entity, 'name', 'Base');
+	ecs.entityManager.addComponent(entity, 'position', { x, y });
+	ecs.entityManager.addComponent(entity, 'name', 'Player Unit');
 	ecs.entityManager.addComponent(entity, 'selectable', true);
 	ecs.entityManager.addComponent(entity, 'clickBounds', {
 		x: container.x - 25,
 		y: container.y - 25,
 		width: 50,
 		height: 50,
+	});
+}
+
+function createBase(x: number, y: number, ecs: ECSpresso<Components, Events, Resources>) {
+	const entity = ecs.entityManager.createEntity();
+	const pixi = ecs.resourceManager.get('pixi');
+	const sprite = new Sprite(
+		pixi.renderer.generateTexture(
+			new Graphics()
+				.rect(0, 0, 150, 150)
+				.fill(0x000000)
+		)
+	);
+	const container = new Container({
+		position: {
+			x,
+			y,
+		},
+		isRenderGroup: true,
+		children: [sprite],
+	});
+
+	sprite.anchor.set(.5, .5);
+	container.interactive = true;
+	container.cursor = 'pointer';
+
+	// sprite mounting is handled by renderBundle via renderLayer component
+	ecs.entityManager.addComponent(entity, 'renderContainer', container);
+	ecs.entityManager.addComponent(entity, 'renderLayer', 'foreground');
+	ecs.entityManager.addComponent(entity, 'position', { x: sprite.x, y: sprite.y });
+	ecs.entityManager.addComponent(entity, 'name', 'Base');
+	ecs.entityManager.addComponent(entity, 'selectable', true);
+	ecs.entityManager.addComponent(entity, 'clickBounds', {
+		x: container.x - 75,
+		y: container.y - 75,
+		width: 150,
+		height: 150,
 	});
 
 	return entity;

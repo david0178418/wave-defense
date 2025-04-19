@@ -20,6 +20,11 @@ interface Components {
 	selectable: true;
 	renderContainer: Container;
 
+	moveTarget: {
+		x: number;
+		y: number;
+	};
+
 	clickBounds: {
 		x: number;
 		y: number;
@@ -28,6 +33,11 @@ interface Components {
 	};
 
 	position: {
+		x: number;
+		y: number;
+	};
+
+	velocity: {
 		x: number;
 		y: number;
 	};
@@ -45,7 +55,13 @@ interface Events {
 	initializePlayer: true;
 	initializeMap: true;
 	startGame: true;
-	initializeBase: true,
+	initializeBase: true;
+	initializePlayerUnits: {
+		position: {
+			x: number;
+			y: number;
+		};
+	};
 	selectEntity: {
 		entity: Entity<Components>;
 		renderContainer: Container;
