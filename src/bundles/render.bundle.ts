@@ -15,7 +15,7 @@ export function renderBundle() {
 			} as const;
 
 			// mount existing sprites
-			for (const entity of entityManager.getEntitiesWithComponents(['renderContainer', 'renderLayer'])) {
+			for (const entity of entityManager.getEntitiesWithQuery(['renderContainer', 'renderLayer'])) {
 				const renderContainer = entity.components.renderContainer;
 				const layer = entity.components.renderLayer;
 				layers[layer].addChild(renderContainer);

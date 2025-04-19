@@ -23,8 +23,13 @@ function selectionBundle() {
 		let dragStartScreen: { x: number; y: number } | null = null;
 		let dragStartWorld: { x: number; y: number } | null = null;
 
-		const dragGraphics = new Graphics();
-		dragGraphics.visible = false;
+		const dragGraphics = new Graphics({
+				visible: false,
+			})
+			.setFillStyle({
+				color: 0x00FF00,
+				alpha: 0.2,
+			});
 		uiContainer.addChild(dragGraphics);
 
 		// make stage interactive and cover full screen
@@ -38,9 +43,7 @@ function selectionBundle() {
 			dragStartScreen = { x: event.global.x, y: event.global.y };
 			const worldPos = event.getLocalPosition(worldContainer);
 			dragStartWorld = { x: worldPos.x, y: worldPos.y };
-			// clear prior drag selections
-			dragSelection.clear();
-			dragGraphics.clear();
+
 			// don't show drag box until movement passes threshold
 			dragGraphics.visible = false;
 
@@ -59,10 +62,12 @@ function selectionBundle() {
 		});
 
 		pixi.stage.on('pointermove', (event) => {
-			if (!dragStartScreen || !dragStartWorld) return;
+			if (!(dragStartScreen && dragStartWorld)) return;
+
 			// calculate movement delta
 			const dx = event.global.x - dragStartScreen.x;
 			const dy = event.global.y - dragStartScreen.y;
+
 			// only start dragging after threshold
 			if (!isDragging) {
 				if (Math.abs(dx) < DragThreshold && Math.abs(dy) < DragThreshold) {
@@ -80,11 +85,11 @@ function selectionBundle() {
 			const rectY = Math.min(y1, y2);
 			const rectW = Math.abs(x2 - x1);
 			const rectH = Math.abs(y2 - y1);
-			dragGraphics.clear();
-			dragGraphics.lineStyle(1, 0x00FF00, 1);
-			dragGraphics.beginFill(0x00FF00, 0.2);
-			dragGraphics.drawRect(rectX, rectY, rectW, rectH);
-			dragGraphics.endFill();
+
+			dragGraphics
+				.clear()
+				.rect(rectX, rectY, rectW, rectH)
+				.fill();
 
 			// dynamic selection toggle in world coords
 			const worldEnd = event.getLocalPosition(worldContainer);
@@ -121,7 +126,7 @@ function selectionBundle() {
 
 		pixi.stage.on('pointerup', (event) => {
 			if (!dragStartScreen || !dragStartWorld) return;
-			dragGraphics.clear();
+
 			dragGraphics.visible = false;
 			
 			if (!isDragging) {
