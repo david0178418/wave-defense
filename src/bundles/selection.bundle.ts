@@ -11,6 +11,7 @@ function selectionBundle() {
 	.addSystem('selection')
 	.setOnInitialize(({ resourceManager, entityManager, eventBus }) => {
 		const pixi = resourceManager.get('pixi');
+		const controlMap = resourceManager.get('activeKeyMap');
 		const worldContainer = resourceManager.get('worldContainer');
 		const uiContainer = resourceManager.get('uiContainer');
 
@@ -21,6 +22,7 @@ function selectionBundle() {
 		let isDragging = false;
 		let dragStartScreen: { x: number; y: number } | null = null;
 		let dragStartWorld: { x: number; y: number } | null = null;
+
 		const dragGraphics = new Graphics();
 		dragGraphics.visible = false;
 		uiContainer.addChild(dragGraphics);
@@ -41,6 +43,19 @@ function selectionBundle() {
 			dragGraphics.clear();
 			// don't show drag box until movement passes threshold
 			dragGraphics.visible = false;
+
+
+			if(controlMap.control) return;
+
+			const selectedEntities = entityManager.getEntitiesWithQuery(['selected', 'renderContainer']);
+
+			for(const entity of selectedEntities) {
+				eventBus.publish('deselectEntity', {
+					entity,
+					renderContainer: entity.components.renderContainer,
+					selectedGraphic: entity.components.selected.graphic,
+				});
+			}
 		});
 
 		pixi.stage.on('pointermove', (event) => {
@@ -81,21 +96,22 @@ function selectionBundle() {
 			const selYw = Math.min(y1w, y2w);
 			const selWw = Math.abs(x2w - x1w);
 			const selHw = Math.abs(y2w - y1w);
-			for (const ent of entityManager.getEntitiesWithComponents(['selectable', 'clickBounds', 'renderContainer'])) {
+
+			for (const ent of entityManager.getEntitiesWithQuery(['selectable', 'clickBounds', 'renderContainer'])) {
 				const b = ent.components.clickBounds;
 				const inside = b.x + b.width >= selXw && b.x <= selXw + selWw && b.y + b.height >= selYw && b.y <= selYw + selHw;
+
 				if (inside && !dragSelection.has(ent.id)) {
 					// newly inside: select
 					eventBus.publish('selectEntity', { entity: ent, renderContainer: ent.components.renderContainer });
 					dragSelection.add(ent.id);
 				} else if (!inside && dragSelection.has(ent.id)) {
 					// moved out: deselect if still selected
-					const selComp = ent.components.selected;
-					if (selComp) {
+					if (ent.components.selected) {
 						eventBus.publish('deselectEntity', {
 							entity: ent,
 							renderContainer: ent.components.renderContainer,
-							selectedGraphic: selComp.graphic,
+							selectedGraphic: ent.components.selected.graphic,
 						});
 					}
 					dragSelection.delete(ent.id);
@@ -111,8 +127,10 @@ function selectionBundle() {
 			if (!isDragging) {
 				// single click selection
 				const { x, y } = event.getLocalPosition(worldContainer);
-				for (const ent of entityManager.getEntitiesWithComponents(['selectable', 'clickBounds', 'renderContainer'])) {
+
+				for (const ent of entityManager.getEntitiesWithQuery(['selectable', 'clickBounds', 'renderContainer'])) {
 					const b = ent.components.clickBounds;
+
 					if (x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height) {
 						const rc = ent.components.renderContainer;
 						if (ent.components.selected) {

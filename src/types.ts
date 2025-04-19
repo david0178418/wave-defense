@@ -1,6 +1,6 @@
 import type ECSpresso from "ecspresso";
 import type { Entity } from "ecspresso";
-import type { Application, Container, Graphics, Sprite } from "pixi.js";
+import type { Application, Container, Graphics } from "pixi.js";
 
 export type Enum<T extends object> = T[keyof T];
 
@@ -85,4 +85,6 @@ interface ActiveControlMap {
 	down: boolean;
 	left: boolean;
 	right: boolean;
+	shift: boolean;
+	control: boolean; // TODO: Maybe rename to multiSelect?
 }

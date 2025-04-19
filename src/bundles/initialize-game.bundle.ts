@@ -89,6 +89,8 @@ function createActiveKeyMap(): ActiveControlMap {
 		down: false,
 		left: false,
 		right: false,
+		control: false,
+		shift: false,
 	};
 
 	window.addEventListener('keydown', (event) => {
@@ -108,6 +110,12 @@ function createActiveKeyMap(): ActiveControlMap {
 			case 'd':
 			case 'ArrowRight':
 				controlMap.right = true;
+				break;
+			case 'Control':
+				controlMap.control = true;
+				break;
+			case 'Shift':
+				controlMap.shift = true;
 				break;
 		}
 	});
@@ -129,6 +137,12 @@ function createActiveKeyMap(): ActiveControlMap {
 			case 'd':
 			case 'ArrowRight':
 				controlMap.right = false;
+				break;
+			case 'Control':
+				controlMap.control = false;
+				break;
+			case 'Shift':
+				controlMap.shift = false;
 				break;
 		}
 	});

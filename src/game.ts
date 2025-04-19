@@ -39,13 +39,10 @@ const ecs = ECSpresso.create<Components, Events, Resources>()
 			width: 2000,
 			height: 2000,
 		},
-	})
+	});
 
 await ecs.initialize();
-
 ecs.eventBus.publish('startGame');
-
-console.log('creating base');
 ecs.eventBus.publish('initializeBase', true);
 
 function createBase(x: number, y: number, ecs: ECSpresso<Components, Events, Resources>) {
