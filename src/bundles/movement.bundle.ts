@@ -20,6 +20,30 @@ function movementBundle() {
 				}
 			}
 		})
+		.setEventHandlers({
+			setMoveTarget: {
+				handler(data, { entityManager }) {
+					const {
+						entity,
+						queue,
+						moveTarget,
+					} = data;
+
+					if(queue) {
+						const waypoints = entity.components.waypoints || [];
+						
+						waypoints.push(moveTarget);
+
+						if(!entity.components.waypoints) {
+							entityManager.addComponent(entity.id, 'waypoints', waypoints);
+						}
+					} else {
+						entityManager.removeComponent(entity.id, 'waypoints');
+						entityManager.addComponent(entity, 'moveTarget', moveTarget);
+					}
+				}
+			}
+		})
 		.bundle
 		.addSystem('move-toward-target')
 		.addQuery('moveTargetEntities', { with: ['moveTarget', 'position', 'speed'] })

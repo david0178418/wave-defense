@@ -127,7 +127,11 @@ function selectionBundle() {
 			const targetY = worldPos.y;
 			for (const entity of entityManager.getEntitiesWithQuery(['selected', 'moveable', 'position', 'renderContainer', 'clickBounds'])) {
 				// assign move target and velocity
-				entityManager.addComponent(entity, 'moveTarget', { x: targetX, y: targetY });
+				eventBus.publish('setMoveTarget', {
+					entity,
+					moveTarget: { x: targetX, y: targetY },
+					queue: controlMap.shift
+				});
 			}
 		});
 

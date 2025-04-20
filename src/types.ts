@@ -62,12 +62,13 @@ interface Events {
 			y: number;
 		};
 	};
-	applyMoveTarget: {
+	setMoveTarget: {
 		entity: Entity<Components>;
 		moveTarget: {
 			x: number;
 			y: number;
 		};
+		queue?: boolean;
 	};
 	selectEntity: {
 		entity: Entity<Components>;
