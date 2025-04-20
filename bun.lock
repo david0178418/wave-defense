@@ -7,7 +7,7 @@
         "@types/react": "^19.1.2",
         "@types/react-dom": "^19.1.2",
         "bun-plugin-tailwind": "^0.0.15",
-        "ecspresso": "^0.3.1",
+        "ecspresso": "^0.3.2",
         "jotai": "^2.12.3",
         "pixi.js": "^8.9.1",
         "react": "^19.1.0",
@@ -49,7 +49,7 @@
 
     "earcut": ["earcut@2.2.4", "", {}, "sha512-/pjZsA1b4RPHbeWZQn66SWS8nZZWLQQ23oE3Eam7aroEFGEvwKAsJfZ9ytiEMycfzXWpca4FA9QIOehf7PocBQ=="],
 
-    "ecspresso": ["ecspresso@0.3.2", "", { "peerDependencies": { "typescript": "^5.8.3" } }, "sha512-jPHtkWifToV8k7hL1s9DWl2okL2h8XWPf/goMHeQaQ2vGxM8myNFi/0gmvfXhVDjdV7/uQPGhIo3Wd5BpOu43Q=="],
+    "ecspresso": ["ecspresso@0.3.3", "", { "peerDependencies": { "typescript": "^5.8.3" } }, "sha512-CbyCSmhogdpnl6GEGGPijqsDvrCzu+Le6hLM9qVkq50cDgM14B4Z0ovi5y+90GAPvnhxKmdQ91NBUyA3sRr+iw=="],
 
     "eventemitter3": ["eventemitter3@5.0.1", "", {}, "sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA=="],
 
