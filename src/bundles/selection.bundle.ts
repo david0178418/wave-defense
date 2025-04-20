@@ -5,7 +5,7 @@ import { Graphics, Rectangle } from 'pixi.js';
 
 const DragThreshold = 10;
 
-export
+export default
 function selectionBundle() {
 	return new Bundle<Components, Events, Resources>()
 	.addSystem('selection')
@@ -14,9 +14,6 @@ function selectionBundle() {
 		const controlMap = resourceManager.get('activeKeyMap');
 		const worldContainer = resourceManager.get('worldContainer');
 		const uiContainer = resourceManager.get('uiContainer');
-
-		// Track entities selected during drag movement
-		const dragSelection = new Set<number>();
 
 		// add drag-selection graphics to UI container
 		let isDragging = false;
@@ -102,25 +99,35 @@ function selectionBundle() {
 			const selWw = Math.abs(x2w - x1w);
 			const selHw = Math.abs(y2w - y1w);
 
-			for (const ent of entityManager.getEntitiesWithQuery(['selectable', 'clickBounds', 'renderContainer'])) {
-				const b = ent.components.clickBounds;
+			for (const entity of entityManager.getEntitiesWithQuery(['selectable', 'clickBounds', 'renderContainer'])) {
+				const b = entity.components.clickBounds;
 				const inside = b.x + b.width >= selXw && b.x <= selXw + selWw && b.y + b.height >= selYw && b.y <= selYw + selHw;
 
-				if (inside && !dragSelection.has(ent.id)) {
+				if (inside) {
 					// newly inside: select
-					eventBus.publish('selectEntity', { entity: ent, renderContainer: ent.components.renderContainer });
-					dragSelection.add(ent.id);
-				} else if (!inside && dragSelection.has(ent.id)) {
+					eventBus.publish('selectEntity', { entity: entity, renderContainer: entity.components.renderContainer });
+				} else if (!inside) {
 					// moved out: deselect if still selected
-					if (ent.components.selected) {
+					if (entity.components.selected) {
 						eventBus.publish('deselectEntity', {
-							entity: ent,
-							renderContainer: ent.components.renderContainer,
-							selectedGraphic: ent.components.selected.graphic,
+							entity: entity,
+							renderContainer: entity.components.renderContainer,
+							selectedGraphic: entity.components.selected.graphic,
 						});
 					}
-					dragSelection.delete(ent.id);
 				}
+			}
+		});
+
+		pixi.stage.on('pointerdown', (event) => {
+			if (event.button !== 2) return;
+
+			const worldPos = event.getLocalPosition(worldContainer);
+			const targetX = worldPos.x;
+			const targetY = worldPos.y;
+			for (const entity of entityManager.getEntitiesWithQuery(['selected', 'moveable', 'position', 'renderContainer', 'clickBounds'])) {
+				// assign move target and velocity
+				entityManager.addComponent(entity, 'moveTarget', { x: targetX, y: targetY });
 			}
 		});
 

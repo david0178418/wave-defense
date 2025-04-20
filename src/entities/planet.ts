@@ -36,7 +36,6 @@ function createPlanet(x: number, y: number, radius: number, color: number, ecs: 
 	// manual click listener removed; selectionBundle now handles pointer events
 
 	entityManager
-		.addComponent(entity, 'sprite', sprite)
 		.addComponent(entity, 'renderLayer', 'foreground')
 		.addComponent(entity, 'selectable', true)
 		.addComponent(entity, 'position', { x, y })

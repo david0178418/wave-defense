@@ -4,9 +4,10 @@ import { initializeGameBundle } from '@/bundles/initialize-game.bundle';
 import { mapPanningBundle } from '@/bundles/map-panning.bundle';
 import { mapInitializationBundle } from '@/bundles/map-initialization.bundle';
 import type { Components, Events, Resources } from './types';
-import { selectionBundle } from './bundles/selection.bundle';
+import selectionBundle from '@/bundles/selection.bundle';
 import { Container, Graphics, Sprite } from 'pixi.js';
-import { renderBundle } from './bundles/render.bundle';
+import { renderBundle } from '@/bundles/render.bundle';
+import movementBundle from '@/bundles/movement.bundle';
 
 const ecs = ECSpresso.create<Components, Events, Resources>()
 	.withBundle(initializeGameBundle())
@@ -14,6 +15,7 @@ const ecs = ECSpresso.create<Components, Events, Resources>()
 	.withBundle(mapPanningBundle())
 	.withBundle(selectionBundle())
 	.withBundle(renderBundle())
+	.withBundle(movementBundle())
 	.withBundle(
 		new Bundle<Components, Events, Resources>()
 			.addSystem('base')
@@ -100,6 +102,8 @@ function createPlayerUnit(x: number, y: number, ecs: ECSpresso<Components, Event
 	ecs.entityManager.addComponent(entity, 'position', { x, y });
 	ecs.entityManager.addComponent(entity, 'name', 'Player Unit');
 	ecs.entityManager.addComponent(entity, 'selectable', true);
+	ecs.entityManager.addComponent(entity, 'moveable', true);
+	ecs.entityManager.addComponent(entity, 'speed', 150);
 	ecs.entityManager.addComponent(entity, 'clickBounds', {
 		x: container.x - 25,
 		y: container.y - 25,

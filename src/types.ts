@@ -10,6 +10,11 @@ export type Enum<T extends object> = T[keyof T];
 export
 type Game = ECSpresso<Components, Events, Resources>;
 
+interface Vector2D {
+	x: number;
+	y: number;
+}
+
 export
 interface Components {
 	hoverable: true;
@@ -20,10 +25,13 @@ interface Components {
 	selectable: true;
 	renderContainer: Container;
 
-	moveTarget: {
-		x: number;
-		y: number;
-	};
+	speed: number;
+
+	moveable: true;
+
+	moveTarget: Vector2D;
+
+	waypoints: Vector2D[];
 
 	clickBounds: {
 		x: number;
@@ -32,15 +40,7 @@ interface Components {
 		height: number;
 	};
 
-	position: {
-		x: number;
-		y: number;
-	};
-
-	velocity: {
-		x: number;
-		y: number;
-	};
+	position: Vector2D;
 
 	selected: {
 		graphic: Graphics;
@@ -58,6 +58,13 @@ interface Events {
 	initializeBase: true;
 	initializePlayerUnits: {
 		position: {
+			x: number;
+			y: number;
+		};
+	};
+	applyMoveTarget: {
+		entity: Entity<Components>;
+		moveTarget: {
 			x: number;
 			y: number;
 		};
