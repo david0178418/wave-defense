@@ -48,13 +48,20 @@ interface Components {
 
 	// Which display layer the sprite should be added to
 	renderLayer: 'background' | 'foreground' | 'uiContainer' | 'mapContainer' | 'worldContainer';
+
+	// Spawn
+	activeSpawner: {
+		spawnCost: number;
+		elapsedCost: number;
+		spawnCallback(): void;
+	};
 }
 
 export
 interface Events {
+	// Init
 	initializePlayer: true;
 	initializeMap: true;
-	startGame: true;
 	initializeBase: true;
 	initializePlayerUnits: {
 		position: {
@@ -62,6 +69,9 @@ interface Events {
 			y: number;
 		};
 	};
+	startGame: true;
+
+	// Controls
 	setMoveTarget: {
 		entity: Entity<Components>;
 		moveTarget: {

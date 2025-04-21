@@ -8,6 +8,7 @@ import selectionBundle from '@/bundles/selection.bundle';
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { renderBundle } from '@/bundles/render.bundle';
 import movementBundle from '@/bundles/movement.bundle';
+import { spawnBundle } from '@/bundles/spawn.bundle';
 
 const ecs = ECSpresso.create<Components, Events, Resources>()
 	.withBundle(initializeGameBundle())
@@ -16,6 +17,7 @@ const ecs = ECSpresso.create<Components, Events, Resources>()
 	.withBundle(selectionBundle())
 	.withBundle(renderBundle())
 	.withBundle(movementBundle())
+	.withBundle(spawnBundle())
 	.withBundle(
 		new Bundle<Components, Events, Resources>()
 			.addSystem('base')
@@ -110,6 +112,8 @@ function createPlayerUnit(x: number, y: number, ecs: ECSpresso<Components, Event
 		width: 50,
 		height: 50,
 	});
+
+	return entity;
 }
 
 function createBase(x: number, y: number, ecs: ECSpresso<Components, Events, Resources>) {
@@ -146,6 +150,21 @@ function createBase(x: number, y: number, ecs: ECSpresso<Components, Events, Res
 		y: container.y - 75,
 		width: 150,
 		height: 150,
+	});
+
+	ecs.entityManager.addComponent(entity, 'activeSpawner', {
+		spawnCost: 5,
+		elapsedCost: 0,
+		spawnCallback: () => {
+			console.log('spawning player unit');
+			entity.components.activeSpawner && (entity.components.activeSpawner.elapsedCost = 0);
+			const newPlayerUnit = createPlayerUnit(container.x, container.y, ecs);
+
+			ecs.entityManager.addComponent(newPlayerUnit, 'moveTarget', {
+				x: container.x + 200,
+				y: container.y - 200,
+			});
+		}
 	});
 
 	return entity;
