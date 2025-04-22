@@ -63,12 +63,6 @@ ecs.eventBus.publish('initializePlayerUnits', {
 		y: 300,
 	},
 });
-// ecs.eventBus.publish('initializePlayerUnits', {
-// 	position: {
-// 		x: 700,
-// 		y: 700,
-// 	},
-// });
 
 function createPlayerUnit(x: number, y: number, ecs: ECSpresso<Components, Events, Resources>) {
 	const entity = ecs.entityManager.createEntity();
