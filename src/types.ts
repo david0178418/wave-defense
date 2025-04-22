@@ -16,6 +16,12 @@ interface Vector2D {
 	y: number;
 }
 
+interface Spawner {
+	spawnCost: number;
+	elapsedCost: number;
+	spawnCallback(): void;
+}
+
 export
 interface Components {
 	hoverable: true;
@@ -44,11 +50,9 @@ interface Components {
 	renderLayer: 'background' | 'foreground' | 'uiContainer' | 'mapContainer' | 'worldContainer';
 
 	// Spawn
-	activeSpawner: {
-		spawnCost: number;
-		elapsedCost: number;
-		spawnCallback(): void;
-	};
+	activeSpawner: Spawner;
+
+	spawnQueue: Spawner[];
 
 	rallyPoint: Vector2D;
 }

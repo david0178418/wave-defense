@@ -20,5 +20,21 @@ function spawnBundle() {
 				}
 			}
 		})
+		.bundle
+		.addSystem('manage-spawn-queue')
+		.addQuery('idleSpawners', {
+			with: ['spawnQueue', 'position'],
+			without: ['activeSpawner'],
+		})
+		.setProcess((data, deltaTime, { entityManager }) => {
+			for (const entity of data.idleSpawners) {
+				const nextSpawner = entity.components.spawnQueue.shift();
+				if(!nextSpawner) {
+					continue;
+				}
+
+				entityManager.addComponent(entity, 'activeSpawner', nextSpawner);
+			}
+		})
 		.bundle;
 }
