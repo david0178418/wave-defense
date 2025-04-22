@@ -2,7 +2,8 @@
 import { Bundle } from 'ecspresso';
 import type { Components, Events, Resources } from '../types';
 
-export function spawnBundle() {
+export default
+function spawnBundle() {
 	return new Bundle<Components, Events, Resources>()
 		.addSystem('spawn')
 		.addQuery('spawningEntities', {

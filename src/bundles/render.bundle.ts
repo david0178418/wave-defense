@@ -2,7 +2,8 @@ import type { Components, Events, Resources } from '@/types';
 import { Bundle } from 'ecspresso';
 import type { Container } from 'pixi.js';
 
-export function renderBundle() {
+export default
+function renderBundle() {
 	return new Bundle<Components, Events, Resources>()
 		.addSystem('render')
 		.setOnInitialize(({ entityManager, resourceManager }) => {

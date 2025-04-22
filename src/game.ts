@@ -1,12 +1,12 @@
 import './styles.css';
-import ECSpresso, { Bundle } from 'ecspresso';
-import { initializeGameBundle } from '@/bundles/initialize-game.bundle';
-import { mapInitializationBundle } from '@/bundles/map-initialization.bundle';
 import type { Components, Events, Resources } from './types';
 import { Container, Graphics, Sprite } from 'pixi.js';
-import { renderBundle } from '@/bundles/render.bundle';
+import ECSpresso, { Bundle } from 'ecspresso';
+import initializeGameBundle from '@/bundles/initialize-game.bundle';
+import mapInitializationBundle from '@/bundles/map-initialization.bundle';
+import renderBundle from '@/bundles/render.bundle';
 import movementBundle from '@/bundles/movement.bundle';
-import { spawnBundle } from '@/bundles/spawn.bundle';
+import spawnBundle from '@/bundles/spawn.bundle';
 import controlsBundle from './bundles/controls-bundle.bundle';
 
 const ecs = ECSpresso.create<Components, Events, Resources>()

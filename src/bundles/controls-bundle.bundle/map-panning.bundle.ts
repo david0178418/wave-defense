@@ -1,7 +1,8 @@
 import type { Components, Events, Resources } from '@/types';
 import { Bundle } from 'ecspresso';
 
-export default function mapPanningBundle() {
+export default
+function mapPanningBundle() {
 	console.log('Creating map-panning bundle');
 	return new Bundle<Components, Events, Resources>()
 		.addSystem('map-panning')

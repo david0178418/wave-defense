@@ -3,7 +3,8 @@ import { Application, Container, Graphics } from 'pixi.js';
 import type { ActiveControlMap, Components, Events, Resources } from '@/types';
 import bootstrapUI from '@/bootstrap-ui';
 
-export function initializeGameBundle() {
+export default
+function initializeGameBundle() {
 	return new Bundle<Components, Events, Resources>()
 		.addResource('activeKeyMap', createActiveKeyMap)
 		.addResource('worldContainer', new Container())
