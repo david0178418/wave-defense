@@ -75,7 +75,7 @@ function mouseInputBundle() {
 				dragGraphics.visible = true;
 			}
 
-			// draw drag rectangle
+			// Draw drag rectangle in screen space
 			const { x: x1, y: y1 } = dragStartScreen;
 			const x2 = event.global.x;
 			const y2 = event.global.y;
@@ -89,20 +89,16 @@ function mouseInputBundle() {
 				.rect(rectX, rectY, rectW, rectH)
 				.fill();
 
-			// dynamic selection toggle in world coords
-			const worldEnd = event.getLocalPosition(worldContainer);
-			const x1w = dragStartWorld.x;
-			const y1w = dragStartWorld.y;
-			const x2w = worldEnd.x;
-			const y2w = worldEnd.y;
-			const selXw = Math.min(x1w, x2w);
-			const selYw = Math.min(y1w, y2w);
-			const selWw = Math.abs(x2w - x1w);
-			const selHw = Math.abs(y2w - y1w);
+			// --- Use Screen Coordinates for Selection ---
+			const selectionRect = new Rectangle(rectX, rectY, rectW, rectH);
 
 			for (const entity of entityManager.getEntitiesWithQuery(['selectable', 'renderContainer'])) {
-				const bounds = entity.components.renderContainer.getBounds();
-				const inside = bounds.x + bounds.width >= selXw && bounds.x <= selXw + selWw && bounds.y + bounds.height >= selYw && bounds.y <= selYw + selHw;
+				const bounds = entity.components.renderContainer.getBounds(); // Get global bounds
+				// Convert Bounds to Rectangle for intersection test
+				const entityRect = new Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
+
+				// Check if the entity's global rectangle intersects with the screen selection rectangle
+				const inside = selectionRect.intersects(entityRect);
 
 				if (inside) {
 					// newly inside: select
@@ -135,9 +131,13 @@ function mouseInputBundle() {
 			dragGraphics.visible = false;
 
 			if (!isDragging) {
-				// single click selection
+				// single click selection - use SCREEN coordinates
 				eventBus.publish('mouseLeftClick', {
-					point: event.getLocalPosition(worldContainer)
+					point: {
+						 // Use screen coordinates
+						x: event.global.x,
+						y: event.global.y
+					}
 				});
 			}
 
