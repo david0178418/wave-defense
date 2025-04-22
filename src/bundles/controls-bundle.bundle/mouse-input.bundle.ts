@@ -7,7 +7,7 @@ import { Graphics, Rectangle } from 'pixi.js';
 const DragThreshold = 10;
 
 export default
-function selectionBundle() {
+function mouseInputBundle() {
 	return new Bundle<Components, Events, Resources>()
 	.addSystem('mouse-input')
 	.setOnInitialize(({ resourceManager, entityManager, eventBus }) => {

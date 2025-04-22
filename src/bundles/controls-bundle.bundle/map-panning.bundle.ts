@@ -1,10 +1,11 @@
 import type { Components, Events, Resources } from '@/types';
 import { Bundle } from 'ecspresso';
 
-export function mapPanningBundle() {
+export default function mapPanningBundle() {
+	console.log('Creating map-panning bundle');
 	return new Bundle<Components, Events, Resources>()
 		.addSystem('map-panning')
-		.setProcess((_data, _deltaTime, {entityManager, resourceManager, eventBus}) => {
+		.setProcess((_data, _deltaTime, { resourceManager }) => {
 			const worldContainer = resourceManager.get('worldContainer');
 			const keyMap = resourceManager.get('activeKeyMap');
 			const pixi = resourceManager.get('pixi');

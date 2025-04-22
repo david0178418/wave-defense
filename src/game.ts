@@ -1,23 +1,21 @@
 import './styles.css';
 import ECSpresso, { Bundle } from 'ecspresso';
 import { initializeGameBundle } from '@/bundles/initialize-game.bundle';
-import { mapPanningBundle } from '@/bundles/map-panning.bundle';
 import { mapInitializationBundle } from '@/bundles/map-initialization.bundle';
 import type { Components, Events, Resources } from './types';
-import mosutInput from '@/bundles/moust-input.bundle';
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { renderBundle } from '@/bundles/render.bundle';
 import movementBundle from '@/bundles/movement.bundle';
 import { spawnBundle } from '@/bundles/spawn.bundle';
+import controlsBundle from './bundles/controls-bundle.bundle';
 
 const ecs = ECSpresso.create<Components, Events, Resources>()
 	.withBundle(initializeGameBundle())
 	.withBundle(mapInitializationBundle())
-	.withBundle(mapPanningBundle())
-	.withBundle(mosutInput())
 	.withBundle(renderBundle())
 	.withBundle(movementBundle())
 	.withBundle(spawnBundle())
+	.withBundle(controlsBundle())
 	.withBundle(
 		new Bundle<Components, Events, Resources>()
 			.addSystem('base')
