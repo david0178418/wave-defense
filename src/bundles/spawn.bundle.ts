@@ -8,13 +8,14 @@ export function spawnBundle() {
 		.addQuery('spawningEntities', {
 			with: ['activeSpawner', 'position'],
 		})
-		.setProcess((data, deltaTime, ecs) => {
+		.setProcess((data, deltaTime, { entityManager }) => {
 			for (const entity of data.spawningEntities) {
 				const spawner = entity.components.activeSpawner;
 				spawner.elapsedCost += deltaTime;
 
 				if (spawner.elapsedCost >= spawner.spawnCost) {
-					// spawner.spawnCallback();
+					entityManager.removeComponent(entity, 'activeSpawner');
+					spawner.spawnCallback();
 				}
 			}
 		})

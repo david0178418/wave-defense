@@ -49,6 +49,8 @@ interface Components {
 		elapsedCost: number;
 		spawnCallback(): void;
 	};
+
+	rallyPoint: Vector2D;
 }
 
 export
@@ -83,6 +85,14 @@ interface Events {
 		renderContainer: Container;
 		selectedGraphic: Graphics;
 	};
+
+	mouseLeftClick: {
+		point: Vector2D;
+	}
+
+	mouseRightClick: {
+		point: Vector2D;
+	}
 }
 
 export

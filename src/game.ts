@@ -139,17 +139,27 @@ function createBase(x: number, y: number, ecs: ECSpresso<Components, Events, Res
 	ecs.entityManager.addComponent(entity, 'position', { x: sprite.x, y: sprite.y });
 	ecs.entityManager.addComponent(entity, 'name', 'Base');
 	ecs.entityManager.addComponent(entity, 'selectable', true);
+	ecs.entityManager.addComponent(entity, 'rallyPoint', {
+		x: x + 100,
+		y: y + 100,
+	});
 
 	ecs.entityManager.addComponent(entity, 'activeSpawner', {
 		spawnCost: 5,
 		elapsedCost: 0,
 		spawnCallback: () => {
 			console.log('spawning player unit');
+			const rallyPoint = entity.components.rallyPoint;
+
+			if(!rallyPoint) {
+				console.error('No rally point.');
+				return;
+			}
+
 			const newPlayerUnit = createPlayerUnit(container.x, container.y, ecs);
 
 			ecs.entityManager.addComponent(newPlayerUnit, 'moveTarget', {
-				x: container.x + 200,
-				y: container.y - 200,
+				...rallyPoint,
 			});
 		}
 	});

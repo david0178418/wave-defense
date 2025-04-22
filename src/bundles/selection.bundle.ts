@@ -123,49 +123,22 @@ function selectionBundle() {
 		pixi.stage.on('pointerdown', (event) => {
 			if (event.button !== 2) return;
 
-			const worldPos = event.getLocalPosition(worldContainer);
-			const targetX = worldPos.x;
-			const targetY = worldPos.y;
-			for (const entity of entityManager.getEntitiesWithQuery(['selected', 'moveable', 'position', 'renderContainer'])) {
-				// assign move target and velocity
-				eventBus.publish('setMoveTarget', {
-					entity,
-					moveTarget: { x: targetX, y: targetY },
-					queue: controlMap.shift
-				});
-			}
+			eventBus.publish('mouseRightClick', {
+				point: event.getLocalPosition(worldContainer),
+			});
+			
 		});
 
 		pixi.stage.on('pointerup', (event) => {
-			if (!dragStartScreen || !dragStartWorld) {
-				console.log('Pointer up without drag start');
-				return;
-			}
+			if (!dragStartScreen || !dragStartWorld) return;
 
 			dragGraphics.visible = false;
-			console.log('isDragging:', isDragging);
+
 			if (!isDragging) {
 				// single click selection
-				const clickPoint = event.getLocalPosition(worldContainer);
-
-				for (const ent of entityManager.getEntitiesWithQuery(['selectable', 'renderContainer'])) {
-					const rectangle = ent.components.renderContainer.getBounds();
-
-					if (pointInRectangle(clickPoint, rectangle)) {
-						const rc = ent.components.renderContainer;
-						console.log('ent.components.selected', ent.components.selected);
-						if (ent.components.selected) {
-							console.log('deselect');
-							eventBus.publish('deselectEntity', { entity: ent, renderContainer: rc, selectedGraphic: ent.components.selected.graphic });
-						} else {
-							console.log('select');
-							eventBus.publish('selectEntity', { entity: ent, renderContainer: rc });
-						}
-						break;
-					} else {
-						console.log('Point not in rectangle:', clickPoint, rectangle);
-					}
-				}
+				eventBus.publish('mouseLeftClick', {
+					point: event.getLocalPosition(worldContainer)
+				});
 			}
 
 			// reset drag state
@@ -175,6 +148,48 @@ function selectionBundle() {
 		});
 	})
 	.setEventHandlers({
+		mouseLeftClick: {
+			handler(data, { entityManager, eventBus }) {
+				const { point } = data;
+
+				for (const entity of entityManager.getEntitiesWithQuery(['selectable', 'renderContainer'])) {
+					const rectangle = entity.components.renderContainer.getBounds();
+
+					if (pointInRectangle(point, rectangle)) {
+						const rc = entity.components.renderContainer;
+						if (entity.components.selected) {
+							eventBus.publish('deselectEntity', { entity, renderContainer: rc, selectedGraphic: entity.components.selected.graphic });
+						} else {
+							eventBus.publish('selectEntity', { entity, renderContainer: rc });
+						}
+						break;
+					}
+				}
+			},
+		},
+		mouseRightClick: {
+			handler(data, { entityManager, eventBus, resourceManager }) {
+				const controlMap = resourceManager.get('activeKeyMap');
+				const { point } = data;
+
+				for (const entity of entityManager.getEntitiesWithQuery(['selected', 'moveable', 'position', 'renderContainer'])) {
+					// assign move target and velocity
+					eventBus.publish('setMoveTarget', {
+						entity,
+						queue: controlMap.shift,
+						moveTarget: {
+							...point,
+						},
+					});
+				}
+
+				for (const entity of entityManager.getEntitiesWithQuery(['selected', 'rallyPoint', 'renderContainer'])) {
+					entityManager.addComponent(entity.id, 'rallyPoint', {
+						...point
+					});
+				}
+			},
+		},
 		selectEntity: {
 			handler(data, { entityManager }) {
 				// Add the "selected" component to the entity And add a circle graphic to the entity

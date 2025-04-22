@@ -14,11 +14,9 @@ function createPlanet(x: number, y: number, radius: number, color: number, ecs: 
 		.circle(0, 0, radius)
 		.fill(color);
 			
-	// Convert graphics to texture and create sprite
 	const texture = resourceManager.get('pixi').renderer.generateTexture(graphics);
 	const sprite = new Sprite(texture);
 	
-	// Position the sprite (as graphics was centered at 0,0)
 	sprite.x = x;
 	sprite.y = y;
 	sprite.anchor.set(0.5);
@@ -33,15 +31,11 @@ function createPlanet(x: number, y: number, radius: number, color: number, ecs: 
 		sprite.scale.set(1);
 	});
 
-	// manual click listener removed; selectionBundle now handles pointer events
-
 	entityManager
 		.addComponent(entity, 'renderLayer', 'foreground')
 		.addComponent(entity, 'selectable', true)
 		.addComponent(entity, 'position', { x, y })
 		.addComponent(entity, 'name', sciFiNameGenerator.generate());
-
-	// sprite mounting is now managed by the render system
 
 	return entity;
 }
