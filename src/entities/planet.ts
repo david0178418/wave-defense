@@ -39,13 +39,7 @@ function createPlanet(x: number, y: number, radius: number, color: number, ecs: 
 		.addComponent(entity, 'renderLayer', 'foreground')
 		.addComponent(entity, 'selectable', true)
 		.addComponent(entity, 'position', { x, y })
-		.addComponent(entity, 'name', sciFiNameGenerator.generate())
-		.addComponent(entity, 'clickBounds', {
-			x: x - radius,
-			y: y - radius,
-			width: radius * 2,
-			height: radius * 2,
-		});
+		.addComponent(entity, 'name', sciFiNameGenerator.generate());
 
 	// sprite mounting is now managed by the render system
 

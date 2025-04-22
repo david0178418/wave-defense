@@ -10,6 +10,7 @@ export type Enum<T extends object> = T[keyof T];
 export
 type Game = ECSpresso<Components, Events, Resources>;
 
+export
 interface Vector2D {
 	x: number;
 	y: number;
@@ -32,13 +33,6 @@ interface Components {
 	moveTarget: Vector2D;
 
 	waypoints: Vector2D[];
-
-	clickBounds: {
-		x: number;
-		y: number;
-		width: number;
-		height: number;
-	};
 
 	position: Vector2D;
 

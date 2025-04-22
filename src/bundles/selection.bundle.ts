@@ -1,5 +1,6 @@
 import type { Components, Events, Resources } from "@/types";
 import { addSelectedEntity, removeSelectedEntity } from "@/ui-state";
+import { pointInRectangle } from "@/utils";
 import { Bundle } from "ecspresso";
 import { Graphics, Rectangle } from 'pixi.js';
 
@@ -99,9 +100,9 @@ function selectionBundle() {
 			const selWw = Math.abs(x2w - x1w);
 			const selHw = Math.abs(y2w - y1w);
 
-			for (const entity of entityManager.getEntitiesWithQuery(['selectable', 'clickBounds', 'renderContainer'])) {
-				const b = entity.components.clickBounds;
-				const inside = b.x + b.width >= selXw && b.x <= selXw + selWw && b.y + b.height >= selYw && b.y <= selYw + selHw;
+			for (const entity of entityManager.getEntitiesWithQuery(['selectable', 'renderContainer'])) {
+				const bounds = entity.components.renderContainer.getBounds();
+				const inside = bounds.x + bounds.width >= selXw && bounds.x <= selXw + selWw && bounds.y + bounds.height >= selYw && bounds.y <= selYw + selHw;
 
 				if (inside) {
 					// newly inside: select
@@ -125,7 +126,7 @@ function selectionBundle() {
 			const worldPos = event.getLocalPosition(worldContainer);
 			const targetX = worldPos.x;
 			const targetY = worldPos.y;
-			for (const entity of entityManager.getEntitiesWithQuery(['selected', 'moveable', 'position', 'renderContainer', 'clickBounds'])) {
+			for (const entity of entityManager.getEntitiesWithQuery(['selected', 'moveable', 'position', 'renderContainer'])) {
 				// assign move target and velocity
 				eventBus.publish('setMoveTarget', {
 					entity,
@@ -136,25 +137,33 @@ function selectionBundle() {
 		});
 
 		pixi.stage.on('pointerup', (event) => {
-			if (!dragStartScreen || !dragStartWorld) return;
+			if (!dragStartScreen || !dragStartWorld) {
+				console.log('Pointer up without drag start');
+				return;
+			}
 
 			dragGraphics.visible = false;
-			
+			console.log('isDragging:', isDragging);
 			if (!isDragging) {
 				// single click selection
-				const { x, y } = event.getLocalPosition(worldContainer);
+				const clickPoint = event.getLocalPosition(worldContainer);
 
-				for (const ent of entityManager.getEntitiesWithQuery(['selectable', 'clickBounds', 'renderContainer'])) {
-					const b = ent.components.clickBounds;
+				for (const ent of entityManager.getEntitiesWithQuery(['selectable', 'renderContainer'])) {
+					const rectangle = ent.components.renderContainer.getBounds();
 
-					if (x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height) {
+					if (pointInRectangle(clickPoint, rectangle)) {
 						const rc = ent.components.renderContainer;
+						console.log('ent.components.selected', ent.components.selected);
 						if (ent.components.selected) {
+							console.log('deselect');
 							eventBus.publish('deselectEntity', { entity: ent, renderContainer: rc, selectedGraphic: ent.components.selected.graphic });
 						} else {
+							console.log('select');
 							eventBus.publish('selectEntity', { entity: ent, renderContainer: rc });
 						}
 						break;
+					} else {
+						console.log('Point not in rectangle:', clickPoint, rectangle);
 					}
 				}
 			}
@@ -207,4 +216,6 @@ function selectionBundle() {
 		},
 	})
 	.bundle;
+
+
 }

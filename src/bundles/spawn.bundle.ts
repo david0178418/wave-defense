@@ -14,7 +14,7 @@ export function spawnBundle() {
 				spawner.elapsedCost += deltaTime;
 
 				if (spawner.elapsedCost >= spawner.spawnCost) {
-					spawner.spawnCallback();
+					// spawner.spawnCallback();
 				}
 			}
 		})

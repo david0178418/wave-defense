@@ -1,3 +1,5 @@
+import type { Vector2D } from "./types";
+
 export function randomInt(min: number, max?: number) {
 	if (max === undefined) {
 		max = min;
@@ -100,6 +102,10 @@ function twist(x: number) {
 function rotateLeft(x: number): number {
 	let tmp = (x & 255) * 2;
 	return tmp > 255 ? tmp - 255 : tmp;
+}
+
+export function pointInRectangle({ x, y }: Vector2D, b: { x: number; y: number; width: number; height: number; }) {
+	return x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height;
 }
 
 export const sciFiNameGenerator = new SciFiNameGenerator();

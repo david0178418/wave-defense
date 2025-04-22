@@ -76,25 +76,6 @@ function movementBundle() {
 			}
 		})
 		.bundle
-		.addSystem('update-click-bounds')
-		.addQuery('clickBoundsEntities', { with: ['clickBounds', 'position', 'moveTarget'] })
-		.setProcess((data, deltaTime) => {
-			for (const entity of data.clickBoundsEntities) {
-				const b = entity.components.clickBounds;
-				const pos = entity.components.position;
-
-				if (
-					b.x === pos.x &&
-					b.y === pos.y
-				) {
-					return;
-				}
-
-				entity.components.clickBounds.x = entity.components.position.x;
-				entity.components.clickBounds.y = entity.components.position.y;
-			}
-		})
-		.bundle
 		.addSystem('update-sprite-position')
 		.addQuery('updatedSpritePositionEntities', { with: ['renderContainer', 'position', 'moveTarget'] })
 		.setProcess((data, deltaTime) => {

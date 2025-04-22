@@ -65,12 +65,12 @@ ecs.eventBus.publish('initializePlayerUnits', {
 		y: 300,
 	},
 });
-ecs.eventBus.publish('initializePlayerUnits', {
-	position: {
-		x: 700,
-		y: 700,
-	},
-});
+// ecs.eventBus.publish('initializePlayerUnits', {
+// 	position: {
+// 		x: 700,
+// 		y: 700,
+// 	},
+// });
 
 function createPlayerUnit(x: number, y: number, ecs: ECSpresso<Components, Events, Resources>) {
 	const entity = ecs.entityManager.createEntity();
@@ -106,12 +106,6 @@ function createPlayerUnit(x: number, y: number, ecs: ECSpresso<Components, Event
 	ecs.entityManager.addComponent(entity, 'selectable', true);
 	ecs.entityManager.addComponent(entity, 'moveable', true);
 	ecs.entityManager.addComponent(entity, 'speed', 150);
-	ecs.entityManager.addComponent(entity, 'clickBounds', {
-		x: container.x - 25,
-		y: container.y - 25,
-		width: 50,
-		height: 50,
-	});
 
 	return entity;
 }
@@ -145,19 +139,12 @@ function createBase(x: number, y: number, ecs: ECSpresso<Components, Events, Res
 	ecs.entityManager.addComponent(entity, 'position', { x: sprite.x, y: sprite.y });
 	ecs.entityManager.addComponent(entity, 'name', 'Base');
 	ecs.entityManager.addComponent(entity, 'selectable', true);
-	ecs.entityManager.addComponent(entity, 'clickBounds', {
-		x: container.x - 75,
-		y: container.y - 75,
-		width: 150,
-		height: 150,
-	});
 
 	ecs.entityManager.addComponent(entity, 'activeSpawner', {
 		spawnCost: 5,
 		elapsedCost: 0,
 		spawnCallback: () => {
 			console.log('spawning player unit');
-			entity.components.activeSpawner && (entity.components.activeSpawner.elapsedCost = 0);
 			const newPlayerUnit = createPlayerUnit(container.x, container.y, ecs);
 
 			ecs.entityManager.addComponent(newPlayerUnit, 'moveTarget', {
