@@ -4,7 +4,7 @@ import { initializeGameBundle } from '@/bundles/initialize-game.bundle';
 import { mapPanningBundle } from '@/bundles/map-panning.bundle';
 import { mapInitializationBundle } from '@/bundles/map-initialization.bundle';
 import type { Components, Events, Resources } from './types';
-import selectionBundle from '@/bundles/selection.bundle';
+import mosutInput from '@/bundles/moust-input.bundle';
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { renderBundle } from '@/bundles/render.bundle';
 import movementBundle from '@/bundles/movement.bundle';
@@ -14,7 +14,7 @@ const ecs = ECSpresso.create<Components, Events, Resources>()
 	.withBundle(initializeGameBundle())
 	.withBundle(mapInitializationBundle())
 	.withBundle(mapPanningBundle())
-	.withBundle(selectionBundle())
+	.withBundle(mosutInput())
 	.withBundle(renderBundle())
 	.withBundle(movementBundle())
 	.withBundle(spawnBundle())

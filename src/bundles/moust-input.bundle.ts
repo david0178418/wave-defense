@@ -9,7 +9,7 @@ const DragThreshold = 10;
 export default
 function selectionBundle() {
 	return new Bundle<Components, Events, Resources>()
-	.addSystem('selection')
+	.addSystem('mouse-input')
 	.setOnInitialize(({ resourceManager, entityManager, eventBus }) => {
 		const pixi = resourceManager.get('pixi');
 		const controlMap = resourceManager.get('activeKeyMap');
