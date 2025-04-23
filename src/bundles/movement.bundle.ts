@@ -1,7 +1,7 @@
 import type { Components, Events, Resources } from "@/types";
 import { Bundle } from "ecspresso";
 
-const MAX_COLLISION_RETRIES = 3; // Ensure this matches collision.bundle.ts
+const MAX_COLLISION_RETRIES = 5; // Ensure this matches collision.bundle.ts
 
 export default
 function movementBundle() {
@@ -56,44 +56,56 @@ function movementBundle() {
 		.addQuery('moveTargetEntities', { with: ['moveTarget', 'position', 'speed'] })
 		.setProcess((data, deltaTime, { entityManager }) => {
 			for (const entity of data.moveTargetEntities) {
+				const pos = entity.components.position;
+				const speed = entity.components.speed;
+				const moveDist = speed * deltaTime;
 
-				// 1. Check for collision detected flag from collision system
+				// Check for collision detected flag *first*
 				if (entity.components.collisionDetected) {
 					entityManager.removeComponent(entity.id, 'collisionDetected');
-					continue; // Skip movement this frame due to collision
 				}
 
 				const movementState = entity.components.movementState;
 
-				// 2. Check movement state (pause timer, retries)
-				if (movementState) {
-					if (movementState.collisionPauseTimer > 0) {
-						movementState.collisionPauseTimer -= deltaTime;
-						continue; // Skip movement while paused
-					}
-					if (movementState.collisionRetryCount >= MAX_COLLISION_RETRIES) {
-						// Give up
-						entityManager.removeComponent(entity.id, 'moveTarget');
-						entityManager.removeComponent(entity.id, 'movementState');
-						continue; // Skip movement
-					}
+				// Order matters: Pause -> Avoid -> Give Up -> Move Target
+
+				// 1. Check pause state
+				if (movementState && movementState.collisionPauseTimer > 0) {
+					movementState.collisionPauseTimer -= deltaTime;
+					continue; // Skip movement while paused
 				}
 
-				// 3. Perform movement if not paused or giving up
+				// 2. Check if in avoidance mode (and pause is finished)
+				if (movementState && movementState.avoidanceTimer > 0) {
+					movementState.avoidanceTimer -= deltaTime;
+					
+					// Move in avoidance direction
+					const avoidDir = movementState.avoidanceDirection;
+					pos.x += avoidDir.x * moveDist;
+					pos.y += avoidDir.y * moveDist;
+
+					continue; // Skip target-directed movement for this frame
+				}
+
+				// 3. Check if giving up (retries exceeded)
+				if (movementState && movementState.collisionRetryCount >= MAX_COLLISION_RETRIES) {
+					// Give up
+					entityManager.removeComponent(entity.id, 'moveTarget');
+					entityManager.removeComponent(entity.id, 'movementState');
+					continue; // Skip movement
+				}
+
+				// 4. Perform target-directed movement if not pausing, avoiding, or giving up
 				const target = entity.components.moveTarget;
-				const pos = entity.components.position;
-				const speed = entity.components.speed;
 				const dx = target.x - pos.x;
 				const dy = target.y - pos.y;
 				const dist = Math.sqrt(dx * dx + dy * dy);
 
-				if (dist === 0) { // Already at target (or somehow got exactly there)
+				if (dist === 0) { // Already at/near target
 					entityManager.removeComponent(entity.id, 'moveTarget');
 					entityManager.removeComponent(entity.id, 'movementState');
 					continue;
 				}
-
-				const moveDist = speed * deltaTime;
 
 				if (moveDist >= dist) {
 					// Reached target
@@ -106,11 +118,6 @@ function movementBundle() {
 					const ratio = moveDist / dist;
 					pos.x += dx * ratio;
 					pos.y += dy * ratio;
-
-					// If we moved successfully, reset collision retry count
-					if (movementState) {
-						movementState.collisionRetryCount = 0;
-					}
 				}
 			}
 		})

@@ -48,9 +48,11 @@ interface Components {
 		// Potentially add type: 'circle' | 'rectangle' in the future
 	};
 
-	movementState?: { // Optional because not all entities with moveTarget will have it initially
-		collisionPauseTimer: number; // Time remaining in pause (seconds)
-		collisionRetryCount: number; // Number of consecutive pauses
+	movementState?: {
+		collisionPauseTimer: number; // Time remaining in pause before avoidance
+		avoidanceTimer: number; // Time remaining for orthogonal avoidance move
+		avoidanceDirection: Vector2D; // Direction for avoidance move
+		collisionRetryCount: number; // Number of consecutive collisions/avoidance maneuvers
 	};
 
 	collisionDetected?: true; // Temporary component added by collision system

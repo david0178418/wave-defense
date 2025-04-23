@@ -32,3 +32,4 @@
 ### Project Structure
 - Place core game logic within the `src` directory.
 - Organize code by feature or domain (e.g., `bundles`, `entities`, `components`, `systems`). 
+- Always attempt to implement new logic in new systems and/or bundles as opposed to overloading existing logic
