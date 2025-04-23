@@ -7,12 +7,14 @@ import renderBundle from '@/bundles/render.bundle';
 import movementBundle from '@/bundles/movement.bundle';
 import spawnBundle from '@/bundles/spawn.bundle';
 import controlsBundle from './bundles/controls-bundle.bundle';
+import collisionBundle from './bundles/collision.bundle';
 import { createBase, createPlayerUnit } from './entities';
 
 const ecs = ECSpresso.create<Components, Events, Resources>()
 	.withBundle(initializeGameBundle())
 	.withBundle(mapInitializationBundle())
 	.withBundle(renderBundle())
+	.withBundle(collisionBundle())
 	.withBundle(movementBundle())
 	.withBundle(spawnBundle())
 	.withBundle(controlsBundle())

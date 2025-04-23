@@ -33,6 +33,7 @@ function createPlayerUnit({ x, y }: Vector2D, ecs: ECSpresso<Components, Events,
 	ecs.entityManager.addComponent(entity, 'renderContainer', container);
 	ecs.entityManager.addComponent(entity, 'renderLayer', 'foreground');
 	ecs.entityManager.addComponent(entity, 'position', { x, y });
+	ecs.entityManager.addComponent(entity, 'collisionBody', { radius: 12.5 });
 	ecs.entityManager.addComponent(entity, 'name', 'Player Unit');
 	ecs.entityManager.addComponent(entity, 'selectable', true);
 	ecs.entityManager.addComponent(entity, 'moveable', true);
@@ -68,7 +69,7 @@ function createBase(x: number, y: number, ecs: ECSpresso<Components, Events, Res
 	// sprite mounting is handled by renderBundle via renderLayer component
 	ecs.entityManager.addComponent(entity, 'renderContainer', container);
 	ecs.entityManager.addComponent(entity, 'renderLayer', 'foreground');
-	ecs.entityManager.addComponent(entity, 'position', { x: sprite.x, y: sprite.y });
+	ecs.entityManager.addComponent(entity, 'position', { x, y });
 	ecs.entityManager.addComponent(entity, 'name', 'Base');
 	ecs.entityManager.addComponent(entity, 'selectable', true);
 	ecs.entityManager.addComponent(entity, 'rallyPoint', {

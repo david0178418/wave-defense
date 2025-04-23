@@ -42,6 +42,19 @@ interface Components {
 
 	position: Vector2D;
 
+	collisionBody: {
+		// Define shape, e.g., radius for a circle
+		radius: number;
+		// Potentially add type: 'circle' | 'rectangle' in the future
+	};
+
+	movementState?: { // Optional because not all entities with moveTarget will have it initially
+		collisionPauseTimer: number; // Time remaining in pause (seconds)
+		collisionRetryCount: number; // Number of consecutive pauses
+	};
+
+	collisionDetected?: true; // Temporary component added by collision system
+
 	selected: {
 		graphic: Graphics;
 	};
