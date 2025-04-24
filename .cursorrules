@@ -12,6 +12,7 @@
 ### Code Style
 - Match the indentation style of the file being edited. For new files or where style is ambiguous, use hard tabs.
 - Use single quotes for string literals unless double quotes are necessary (e.g., within JSX or for strings containing single quotes).
+- When removing or replacing code, delete the old code instead of commenting it out. Explanatory comments are still encouraged.
 
 ### Testing
 - Do not edit test files unless explicitly directed.
