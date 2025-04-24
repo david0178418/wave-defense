@@ -60,11 +60,6 @@ function movementBundle() {
 				const speed = entity.components.speed;
 				const moveDist = speed * deltaTime;
 
-				// Check for collision detected flag *first*
-				if (entity.components.collisionDetected) {
-					entityManager.removeComponent(entity.id, 'collisionDetected');
-				}
-
 				const movementState = entity.components.movementState;
 
 				// Order matters: Give Up -> Pause -> Avoid -> Move Target

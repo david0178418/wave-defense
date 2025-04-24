@@ -55,8 +55,6 @@ interface Components {
 		collisionRetryCount: number; // Number of consecutive collisions/avoidance maneuvers
 	};
 
-	collisionDetected?: true; // Temporary component added by collision system
-
 	selected: {
 		graphic: Graphics;
 	};

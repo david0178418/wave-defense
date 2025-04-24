@@ -108,6 +108,31 @@ export function pointInRectangle({ x, y }: Vector2D, b: { x: number; y: number; 
 	return x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height;
 }
 
+// --- Vector Math Helpers ---
+
+/**
+ * Normalizes a 2D vector.
+ * @param v The vector to normalize.
+ * @param fallback The vector to return if the input vector length is zero. Defaults to {x: 1, y: 0}.
+ * @returns The normalized vector or the fallback.
+ */
+export function normalize(v: Vector2D, fallback: Vector2D = { x: 1, y: 0 }): Vector2D {
+	const len = Math.sqrt(v.x * v.x + v.y * v.y);
+	return len > 0 ? { x: v.x / len, y: v.y / len } : fallback;
+}
+
+/**
+ * Calculates the dot product of two 2D vectors.
+ * @param v1 The first vector.
+ * @param v2 The second vector.
+ * @returns The dot product.
+ */
+export function dot(v1: Vector2D, v2: Vector2D): number {
+	return v1.x * v2.x + v1.y * v2.y;
+}
+
+// --- End Vector Math Helpers ---
+
 export const sciFiNameGenerator = new SciFiNameGenerator();
 
 // Extract what I can from this...

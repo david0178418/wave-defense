@@ -1,25 +1,14 @@
 import type { Components, Events, Resources, Vector2D } from "@/types";
 import { Bundle } from "ecspresso";
-import { MAX_COLLISION_RETRIES } from "@/constants"; // Import shared constant
-
-const AVOIDANCE_DURATION = 0.3; // seconds
-const COLLISION_PAUSE_DURATION = 0.2; // seconds
-const AVOIDANCE_BIAS_FACTOR = 0.5; // How much to bias perp-obstacle dir with perp-target dir
-
-// Define randomness ranges
-const BIAS_RANDOMNESS = 0.3; // e.g., 0.5 +/- (0.2 / 2) => range 0.4 to 0.6
-const PAUSE_RANDOMNESS = 0.3; // e.g., 0.2 +/- (0.1 / 2) => range 0.15 to 0.25
-
-// Helper: Normalize vector, return fallback if length is zero
-function normalize(v: Vector2D, fallback: Vector2D = { x: 1, y: 0 }): Vector2D {
-	const len = Math.sqrt(v.x * v.x + v.y * v.y);
-	return len > 0 ? { x: v.x / len, y: v.y / len } : fallback;
-}
-
-// Helper: Dot product
-function dot(v1: Vector2D, v2: Vector2D): number {
-	return v1.x * v2.x + v1.y * v2.y;
-}
+import {
+	MAX_COLLISION_RETRIES,
+	AVOIDANCE_DURATION,
+	COLLISION_PAUSE_DURATION,
+	AVOIDANCE_BIAS_FACTOR,
+	BIAS_RANDOMNESS,
+	PAUSE_RANDOMNESS
+} from "@/constants"; // Import shared constants
+import { normalize, dot } from "@/utils"; // Import vector helpers
 
 export default
 function collisionBundle() {
@@ -28,7 +17,6 @@ function collisionBundle() {
 		.addQuery('movingEntities', {
 			with: ['moveTarget', 'position', 'speed', 'collisionBody'],
 			// We will filter entities currently in avoidance mode manually below
-			without: ['collisionDetected'], // Avoid re-flagging in the same tick
 		})
 		.addQuery('colliders', { with: ['position', 'collisionBody'] })
 		.setProcess((data, deltaTime, { entityManager }) => {
@@ -82,25 +70,32 @@ function collisionBundle() {
 				}
 
 				if (collisionFound && hitObstaclePos) {
-					const currentRetryCount = movementState?.collisionRetryCount || 0;
-					const newRetryCount = currentRetryCount + 1;
-
-					// --- Update retry count regardless --- 
-					if (movementState) {
-						movementState.collisionRetryCount = newRetryCount;
-					} else {
-						// If state doesn't exist, need to add it with the count
-						entityManager.addComponent(movingEntity.id, 'movementState', {
+					// Get or add movement state
+					let movementState = entityManager.getComponent(movingEntity.id, 'movementState');
+					if (!movementState) {
+						entityManager.addComponent(movingEntity.id, 'movementState', { // Add without assigning result
 							collisionPauseTimer: 0,
 							avoidanceTimer: 0,
-							avoidanceDirection: { x: 0, y: 0 }, // Placeholder
-							collisionRetryCount: newRetryCount,
+							avoidanceDirection: { x: 0, y: 0 }, 
+							collisionRetryCount: 0, // Start at 0
 						});
+						movementState = entityManager.getComponent(movingEntity.id, 'movementState'); // Get it again immediately
 					}
+
+					// Type guard: If state somehow still doesn't exist, something is wrong.
+					if (!movementState) {
+						console.error("Failed to get or add movementState for entity:", movingEntity.id);
+						continue; // Skip processing this entity
+					}
+					
+					// Calculate and update retry count (state is guaranteed non-null here)
+					const currentRetryCount = movementState.collisionRetryCount;
+					const newRetryCount = currentRetryCount + 1;
+					movementState.collisionRetryCount = newRetryCount;
 
 					// --- Initiate pause/avoidance only if below retry limit --- 
 					if (newRetryCount < MAX_COLLISION_RETRIES) {
-						// Calculate Avoidance Direction (with randomized bias) 
+						// Calculate Avoidance Direction (with randomized bias)
 						const V_obs_to_curr = { x: pos.x - hitObstaclePos.x, y: pos.y - hitObstaclePos.y };
 						const N_obs_to_curr = normalize(V_obs_to_curr);
 						const P1_obs = { x: -N_obs_to_curr.y, y: N_obs_to_curr.x };
@@ -117,14 +112,13 @@ function collisionBundle() {
 						const randomPauseDuration = COLLISION_PAUSE_DURATION + (Math.random() - 0.5) * PAUSE_RANDOMNESS;
 						const effectivePauseDuration = Math.max(0, randomPauseDuration);
 
-						// Update remaining state fields (timers, direction)
-						const stateToUpdate = entityManager.getComponent(movingEntity.id, 'movementState')!;
-						stateToUpdate.collisionPauseTimer = effectivePauseDuration;
-						stateToUpdate.avoidanceTimer = AVOIDANCE_DURATION;
-						stateToUpdate.avoidanceDirection = finalAvoidanceDir;
-
-						// Signal movement system
-						entityManager.addComponent(movingEntity.id, 'collisionDetected', true);
+						// Update remaining state fields (timers, direction) 
+						// state is guaranteed non-null here
+						movementState.collisionPauseTimer = effectivePauseDuration;
+						movementState.avoidanceTimer = AVOIDANCE_DURATION;
+						movementState.avoidanceDirection = finalAvoidanceDir;
+						
+						// Signal movement system removed
 					}
 				}
 			}
