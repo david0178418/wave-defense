@@ -1,9 +1,31 @@
 import type { Components, Events, Resources, Vector2D } from "@/types";
 import { Bundle, type Entity } from "ecspresso";
 import { createProjectile } from "@/entities";
-import { normalize } from "@/utils";
+import { normalize, dot } from "@/utils";
 
 const PROJECTILE_SPEED = 400;
+
+// Function to solve quadratic: ax^2 + bx + c = 0
+// Returns the smallest positive real root, or null if none exists.
+function solveQuadraticForSmallestPositive(a: number, b: number, c: number): number | null {
+	if (Math.abs(a) < 1e-6) { // Handle linear equation case (a is close to zero)
+		if (Math.abs(b) < 1e-6) return null; // No solution or infinite solutions
+		const t = -c / b;
+		return t > 0 ? t : null;
+	}
+
+	const discriminant = b * b - 4 * a * c;
+	if (discriminant < 0) return null; // No real roots
+
+	const sqrtDiscriminant = Math.sqrt(discriminant);
+	const t1 = (-b + sqrtDiscriminant) / (2 * a);
+	const t2 = (-b - sqrtDiscriminant) / (2 * a);
+
+	if (t1 > 0 && t2 > 0) return Math.min(t1, t2);
+	if (t1 > 0) return t1;
+	if (t2 > 0) return t2;
+	return null;
+}
 
 export default
 function shootingBundle() {
@@ -11,7 +33,7 @@ function shootingBundle() {
 		// --- System 1: Target Acquisition & Firing ---
 		.addSystem('target-acquisition-and-firing')
 		.addQuery('shooters', { with: ['shooter', 'position', 'playerUnitTag'] })
-		.addQuery('targets', { with: ['enemyUnit', 'position'] })
+		.addQuery('targets', { with: ['enemyUnit', 'position', 'speed'] })
 		.setProcess((data, deltaTime, ecs) => {
 			const allTargets = Array.from(data.targets);
 			if (allTargets.length === 0) return; // No targets, nothing to shoot at
@@ -45,12 +67,38 @@ function shootingBundle() {
 					// Reset cooldown
 					shooter.cooldownTimer = 1 / shooter.attackSpeed;
 
-					// Calculate direction and velocity
 					const targetPos = nearestTarget.components.position!;
-					const direction = normalize({ x: targetPos.x - shooterPos.x, y: targetPos.y - shooterPos.y });
-					const velocity = { x: direction.x * PROJECTILE_SPEED, y: direction.y * PROJECTILE_SPEED };
+					const targetSpeed = nearestTarget.components.speed!;
+					const targetMoveTarget = nearestTarget.components.moveTarget; // Optional
 
-					// Create projectile
+					let targetVel: Vector2D = { x: 0, y: 0 };
+					if (targetMoveTarget) {
+						const dirToMoveTarget = normalize({ x: targetMoveTarget.x - targetPos.x, y: targetMoveTarget.y - targetPos.y });
+						targetVel = { x: dirToMoveTarget.x * targetSpeed, y: dirToMoveTarget.y * targetSpeed };
+					}
+
+					let firingDirection: Vector2D;
+
+					// Calculate intercept solution
+					const shooterToTarget = { x: targetPos.x - shooterPos.x, y: targetPos.y - shooterPos.y };
+					
+					const a = dot(targetVel, targetVel) - PROJECTILE_SPEED * PROJECTILE_SPEED;
+					const b = 2 * dot(shooterToTarget, targetVel);
+					const c = dot(shooterToTarget, shooterToTarget);
+
+					const predictedTime = solveQuadraticForSmallestPositive(a, b, c);
+
+					if (predictedTime !== null) {
+						// Aim at predicted position
+						const interceptX = targetPos.x + targetVel.x * predictedTime;
+						const interceptY = targetPos.y + targetVel.y * predictedTime;
+						firingDirection = normalize({ x: interceptX - shooterPos.x, y: interceptY - shooterPos.y });
+					} else {
+						// Fallback: Aim directly at current target position
+						firingDirection = normalize(shooterToTarget);
+					}
+
+					const velocity = { x: firingDirection.x * PROJECTILE_SPEED, y: firingDirection.y * PROJECTILE_SPEED };
 					createProjectile(shooterPos, velocity, shooter.projectileDamage, ecs);
 				}
 			}
