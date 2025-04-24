@@ -39,6 +39,12 @@ function createPlayerUnit({ x, y }: Vector2D, ecs: ECSpresso<Components, Events,
 	ecs.entityManager.addComponent(entity, 'moveable', true);
 	ecs.entityManager.addComponent(entity, 'playerUnitTag', true);
 	ecs.entityManager.addComponent(entity, 'speed', 150);
+	ecs.entityManager.addComponent(entity, 'shooter', {
+		range: 200,
+		attackSpeed: 1.5,
+		cooldownTimer: 0,
+		projectileDamage: 5
+	});
 
 	return entity;
 }
@@ -165,6 +171,47 @@ function createBase(x: number, y: number, ecs: ECSpresso<Components, Events, Res
 			...rallyPoint,
 		});
 	}
+
+	return entity;
+}
+
+export
+function createProjectile(
+	spawnPos: Vector2D, 
+	velocity: Vector2D, 
+	damage: number, 
+	ecs: ECSpresso<Components, Events, Resources>
+) {
+	const entity = ecs.entityManager.createEntity();
+	const pixi = ecs.resourceManager.get('pixi');
+	
+	// Simple circle graphic for projectile
+	const radius = 4;
+	const sprite = new Sprite(
+		pixi.renderer.generateTexture(
+			new Graphics()
+				.circle(0, 0, radius)
+				.fill(0xFFFF00) // Yellow color
+		)
+	);
+	const container = new Container({
+		position: { ...spawnPos },
+		isRenderGroup: true,
+		children: [sprite],
+	});
+	sprite.anchor.set(.5, .5);
+
+	ecs.entityManager.addComponent(entity, 'renderContainer', container);
+	ecs.entityManager.addComponent(entity, 'renderLayer', 'foreground'); // Or a dedicated projectile layer?
+	ecs.entityManager.addComponent(entity, 'position', { ...spawnPos });
+	ecs.entityManager.addComponent(entity, 'velocity', { ...velocity });
+	ecs.entityManager.addComponent(entity, 'collisionBody', { radius });
+	ecs.entityManager.addComponent(entity, 'projectile', true);
+	ecs.entityManager.addComponent(entity, 'dealsDamageOnCollision', {
+		amount: damage,
+		targetTags: ['enemyUnit'], // Only damages enemies
+		destroySelf: true // Projectile is destroyed on impact
+	});
 
 	return entity;
 }

@@ -11,6 +11,7 @@ import collisionBundle from './bundles/collision.bundle';
 import enemySpawningBundle from './bundles/enemy-spawning.bundle';
 import healthBundle from './bundles/health.bundle';
 import cleanupBundle from './bundles/cleanup.bundle';
+import shootingBundle from './bundles/shooting.bundle';
 import { createBase, createPlayerUnit } from './entities';
 
 const ecs = ECSpresso.create<Components, Events, Resources>()
@@ -19,6 +20,7 @@ const ecs = ECSpresso.create<Components, Events, Resources>()
 	.withBundle(controlsBundle())
 	.withBundle(enemySpawningBundle())
 	.withBundle(spawnBundle())
+	.withBundle(shootingBundle())
 	.withBundle(collisionBundle())
 	.withBundle(movementBundle())
 	.withBundle(healthBundle())

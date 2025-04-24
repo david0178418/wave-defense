@@ -38,6 +38,20 @@ interface Components {
 	playerUnitTag?: true; // Add tag for player units
 	baseTag?: true; // Add tag for the base
 
+	shooter?: { // Added for units that shoot
+		range: number;
+		attackSpeed: number; // Attacks per second
+		cooldownTimer: number; // Time until next shot
+		projectileDamage: number;
+	};
+
+	velocity?: { // Added for projectiles
+		x: number;
+		y: number;
+	};
+
+	projectile?: true; // Tag for projectile entities
+
 	speed: number;
 
 	moveable: true;
