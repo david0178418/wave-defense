@@ -1,6 +1,13 @@
 import type ECSpresso from "ecspresso";
-import type { Components, Events, Resources, Vector2D } from "./types";
+import type { Components, Events, Resources, Vector2D, Weapon } from "./types";
 import { Container, Graphics, Sprite } from "pixi.js";
+
+// Helper to create simple projectile graphics
+function createProjectileGraphic(color: number, radius: number = 4): Graphics {
+	return new Graphics()
+		.circle(0, 0, radius)
+		.fill(color);
+}
 
 export
 function createPlayerUnit({ x, y }: Vector2D, ecs: ECSpresso<Components, Events, Resources>) {
@@ -39,12 +46,26 @@ function createPlayerUnit({ x, y }: Vector2D, ecs: ECSpresso<Components, Events,
 	ecs.entityManager.addComponent(entity, 'moveable', true);
 	ecs.entityManager.addComponent(entity, 'playerUnitTag', true);
 	ecs.entityManager.addComponent(entity, 'speed', 150);
-	ecs.entityManager.addComponent(entity, 'shooter', {
+
+	const weapon1: Weapon = { // Standard weapon
 		range: 200,
 		attackSpeed: 1.5,
 		cooldownTimer: 0,
-		projectileDamage: 5
-	});
+		projectileDamage: 5,
+		projectileGraphicFn: () => createProjectileGraphic(0xFFFF00) // Yellow
+	};
+	const weapon2: Weapon = { // Machine gun
+		range: 180, // Slightly shorter range
+		attackSpeed: 6, // Much faster
+		cooldownTimer: 0.1, // Slight initial delay staggers shots
+		projectileDamage: 1, // Lower damage
+		projectileGraphicFn: () => createProjectileGraphic(0xFF8C00, 3) // Orange, slightly smaller
+	};
+
+	ecs.entityManager.addComponent(entity, 'weaponSlots', { slots: [
+		weapon1,
+		weapon2,
+	] });
 
 	return entity;
 }
@@ -180,20 +201,16 @@ function createProjectile(
 	spawnPos: Vector2D, 
 	velocity: Vector2D, 
 	damage: number, 
+	projectileGraphic: Graphics, // Accept Graphics object
 	ecs: ECSpresso<Components, Events, Resources>
 ) {
 	const entity = ecs.entityManager.createEntity();
-	const pixi = ecs.resourceManager.get('pixi');
 	
-	// Simple circle graphic for projectile
-	const radius = 4;
-	const sprite = new Sprite(
-		pixi.renderer.generateTexture(
-			new Graphics()
-				.circle(0, 0, radius)
-				.fill(0xFFFF00) // Yellow color
-		)
-	);
+	// Use the passed graphic as the sprite
+	const sprite = new Sprite(ecs.resourceManager.get('pixi').renderer.generateTexture(projectileGraphic));
+	// Use graphic bounds for collision radius if possible, otherwise default
+	const radius = Math.max(projectileGraphic.width / 2, projectileGraphic.height / 2) || 4;
+
 	const container = new Container({
 		position: { ...spawnPos },
 		isRenderGroup: true,
@@ -202,15 +219,15 @@ function createProjectile(
 	sprite.anchor.set(.5, .5);
 
 	ecs.entityManager.addComponent(entity, 'renderContainer', container);
-	ecs.entityManager.addComponent(entity, 'renderLayer', 'foreground'); // Or a dedicated projectile layer?
+	ecs.entityManager.addComponent(entity, 'renderLayer', 'foreground');
 	ecs.entityManager.addComponent(entity, 'position', { ...spawnPos });
 	ecs.entityManager.addComponent(entity, 'velocity', { ...velocity });
 	ecs.entityManager.addComponent(entity, 'collisionBody', { radius });
 	ecs.entityManager.addComponent(entity, 'projectile', true);
 	ecs.entityManager.addComponent(entity, 'dealsDamageOnCollision', {
 		amount: damage,
-		targetTags: ['enemyUnit'], // Only damages enemies
-		destroySelf: true // Projectile is destroyed on impact
+		targetTags: ['enemyUnit'],
+		destroySelf: true
 	});
 
 	return entity;

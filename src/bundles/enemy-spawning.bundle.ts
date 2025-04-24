@@ -1,4 +1,4 @@
-import type { Components, Events, Resources, Vector2D } from "@/types";
+import type { Components, Events, Resources } from "@/types";
 import { Bundle } from "ecspresso";
 import { createEnemyUnit } from "@/entities";
 import { randomInt } from "@/utils";

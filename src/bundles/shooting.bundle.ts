@@ -32,76 +32,80 @@ function shootingBundle() {
 	return new Bundle<Components, Events, Resources>()
 		// --- System 1: Target Acquisition & Firing ---
 		.addSystem('target-acquisition-and-firing')
-		.addQuery('shooters', { with: ['shooter', 'position', 'playerUnitTag'] })
+		.addQuery('shooters', { with: ['weaponSlots', 'position', 'playerUnitTag'] })
 		.addQuery('targets', { with: ['enemyUnit', 'position', 'speed'] })
 		.setProcess((data, deltaTime, ecs) => {
 			const allTargets = Array.from(data.targets);
-			if (allTargets.length === 0) return; // No targets, nothing to shoot at
+			if (allTargets.length === 0) return;
 
 			for (const shooterEntity of data.shooters) {
-				const shooter = shooterEntity.components.shooter!;
+				const weaponSlots = shooterEntity.components.weaponSlots!;
 				const shooterPos = shooterEntity.components.position!;
 
-				// Update cooldown
-				shooter.cooldownTimer -= deltaTime;
-				if (shooter.cooldownTimer > 0) continue; // Still cooling down
+				// Iterate through each weapon slot
+				for (const weapon of weaponSlots.slots) {
+					// Update cooldown for this weapon
+					weapon.cooldownTimer -= deltaTime;
+					if (weapon.cooldownTimer > 0) continue; // This weapon is cooling down
 
-				// Find nearest target in range
-				let nearestTarget: Entity<Components> | null = null;
-				let minDistanceSq = shooter.range * shooter.range;
+					// Find nearest target in *this weapon's* range
+					let nearestTarget: Entity<Components> | null = null;
+					let minDistanceSq = weapon.range * weapon.range;
 
-				for (const targetEntity of allTargets) {
-					const targetPos = targetEntity.components.position!;
-					const dx = targetPos.x - shooterPos.x;
-					const dy = targetPos.y - shooterPos.y;
-					const distanceSq = dx * dx + dy * dy;
+					for (const targetEntity of allTargets) {
+						const targetPos = targetEntity.components.position!;
+						const dx = targetPos.x - shooterPos.x;
+						const dy = targetPos.y - shooterPos.y;
+						const distanceSq = dx * dx + dy * dy;
 
-					if (distanceSq <= minDistanceSq) {
-						minDistanceSq = distanceSq;
-						nearestTarget = targetEntity;
-					}
-				}
-
-				// Fire if target found
-				if (nearestTarget) {
-					// Reset cooldown
-					shooter.cooldownTimer = 1 / shooter.attackSpeed;
-
-					const targetPos = nearestTarget.components.position!;
-					const targetSpeed = nearestTarget.components.speed!;
-					const targetMoveTarget = nearestTarget.components.moveTarget; // Optional
-
-					let targetVel: Vector2D = { x: 0, y: 0 };
-					if (targetMoveTarget) {
-						const dirToMoveTarget = normalize({ x: targetMoveTarget.x - targetPos.x, y: targetMoveTarget.y - targetPos.y });
-						targetVel = { x: dirToMoveTarget.x * targetSpeed, y: dirToMoveTarget.y * targetSpeed };
+						if (distanceSq <= minDistanceSq) {
+							minDistanceSq = distanceSq;
+							nearestTarget = targetEntity;
+						}
 					}
 
-					let firingDirection: Vector2D;
+					// Fire if target found for this weapon
+					if (nearestTarget) {
+						// Reset cooldown for *this weapon*
+						weapon.cooldownTimer = 1 / weapon.attackSpeed;
 
-					// Calculate intercept solution
-					const shooterToTarget = { x: targetPos.x - shooterPos.x, y: targetPos.y - shooterPos.y };
-					
-					const a = dot(targetVel, targetVel) - PROJECTILE_SPEED * PROJECTILE_SPEED;
-					const b = 2 * dot(shooterToTarget, targetVel);
-					const c = dot(shooterToTarget, shooterToTarget);
+						// --- Target Leading Logic (using this weapon's range/damage) ---
+						const targetPos = nearestTarget.components.position!;
+						const targetSpeed = nearestTarget.components.speed!;
+						const targetMoveTarget = nearestTarget.components.moveTarget;
 
-					const predictedTime = solveQuadraticForSmallestPositive(a, b, c);
+						let targetVel: Vector2D = { x: 0, y: 0 };
+						if (targetMoveTarget) {
+							const dirToMoveTarget = normalize({ x: targetMoveTarget.x - targetPos.x, y: targetMoveTarget.y - targetPos.y });
+							targetVel = { x: dirToMoveTarget.x * targetSpeed, y: dirToMoveTarget.y * targetSpeed };
+						}
 
-					if (predictedTime !== null) {
-						// Aim at predicted position
-						const interceptX = targetPos.x + targetVel.x * predictedTime;
-						const interceptY = targetPos.y + targetVel.y * predictedTime;
-						firingDirection = normalize({ x: interceptX - shooterPos.x, y: interceptY - shooterPos.y });
-					} else {
-						// Fallback: Aim directly at current target position
-						firingDirection = normalize(shooterToTarget);
+						let firingDirection: Vector2D;
+						const shooterToTarget = { x: targetPos.x - shooterPos.x, y: targetPos.y - shooterPos.y };
+						const a = dot(targetVel, targetVel) - PROJECTILE_SPEED * PROJECTILE_SPEED;
+						const b = 2 * dot(shooterToTarget, targetVel);
+						const c = dot(shooterToTarget, shooterToTarget);
+						const predictedTime = solveQuadraticForSmallestPositive(a, b, c);
+
+						if (predictedTime !== null) {
+							const interceptX = targetPos.x + targetVel.x * predictedTime;
+							const interceptY = targetPos.y + targetVel.y * predictedTime;
+							firingDirection = normalize({ x: interceptX - shooterPos.x, y: interceptY - shooterPos.y });
+						} else {
+							firingDirection = normalize(shooterToTarget);
+						}
+						// --- End Target Leading Logic ---
+
+						const velocity = { x: firingDirection.x * PROJECTILE_SPEED, y: firingDirection.y * PROJECTILE_SPEED };
+						
+						// Generate graphic using the weapon's function
+						const projectileGraphic = weapon.projectileGraphicFn();
+
+						// Create projectile, passing the specific graphic and damage
+						createProjectile(shooterPos, velocity, weapon.projectileDamage, projectileGraphic, ecs);
 					}
-
-					const velocity = { x: firingDirection.x * PROJECTILE_SPEED, y: firingDirection.y * PROJECTILE_SPEED };
-					createProjectile(shooterPos, velocity, shooter.projectileDamage, ecs);
-				}
-			}
+				} // End loop through weapons
+			} // End loop through shooters
 		})
 		.bundle
 		// --- System 2: Projectile Movement ---

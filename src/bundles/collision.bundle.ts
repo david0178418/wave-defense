@@ -1,4 +1,4 @@
-import type { Components, Events, Resources, Vector2D, CollisionTargetTag } from "@/types";
+import type { Components, Events, Resources, CollisionTargetTag } from "@/types";
 import { Bundle, type Entity } from "ecspresso";
 import {
 	MAX_COLLISION_RETRIES,
@@ -8,7 +8,7 @@ import {
 	BIAS_RANDOMNESS,
 	PAUSE_RANDOMNESS
 } from "@/constants"; // Import shared constants
-import { normalize, dot } from "@/utils"; // Import vector helpers
+import { normalize, dot, intersectLineSegmentCircle } from "@/utils"; // Import vector helpers and new util
 
 // Helper function to check tags
 function hasMatchingTag(entity: Entity<Components>, tags: CollisionTargetTag[]): boolean {
@@ -28,77 +28,97 @@ export default
 function collisionBundle() {
 	return new Bundle<Components, Events, Resources>()
 		.addSystem('detect-collisions')
-		.addQuery('movingEntities', { with: ['moveTarget', 'position', 'speed', 'collisionBody'] })
-		.addQuery('colliders', { with: ['position', 'collisionBody'] })
+		// Querying movingEntities which might include projectiles
+		.addQuery('movingEntities', { with: ['position', 'collisionBody'], without: ['toBeRemoved'] })
+		.addQuery('colliders', { with: ['position', 'collisionBody'], without: ['toBeRemoved'] })
 		.setProcess((data, deltaTime, { entityManager }) => {
 			const allColliders = Array.from(data.colliders);
 
 			for (const movingEntity of data.movingEntities) {
-				const target = movingEntity.components.moveTarget;
-				const pos = movingEntity.components.position;
+				const pos = movingEntity.components.position!;
+				const body = movingEntity.components.collisionBody!;
+				const isProjectile = movingEntity.components.projectile === true;
+				const velocity = movingEntity.components.velocity;
+				const moveTarget = movingEntity.components.moveTarget;
 				const speed = movingEntity.components.speed;
-				const body = movingEntity.components.collisionBody;
-				
-				// Vector towards target & perpendiculars (needed for avoidance calc later)
-				const V_to_target = { x: target.x - pos.x, y: target.y - pos.y };
-				const distToTarget = Math.sqrt(V_to_target.x * V_to_target.x + V_to_target.y * V_to_target.y);
-				const N_to_target = distToTarget > 0 ? { x: V_to_target.x / distToTarget, y: V_to_target.y / distToTarget } : { x: 1, y: 0 };
-				const P1_target = { x: -N_to_target.y, y: N_to_target.x };
-				const P2_target = { x: N_to_target.y, y: -N_to_target.x };
-				
-				// Skip check if already avoiding/paused
-				const existingMovementState = entityManager.getComponent(movingEntity.id, 'movementState');
-				if (existingMovementState && (existingMovementState.avoidanceTimer > 0 || existingMovementState.collisionPauseTimer > 0)) {
-					continue;
+
+				// Calculate potential next position & move vector
+				let nextX = pos.x, nextY = pos.y;
+				let moveVec = { x: 0, y: 0 };
+				// Declare target-related vectors needed later for avoidance
+				let N_to_target = { x: 1, y: 0 }; // Default facing right
+				let P1_target = { x: 0, y: 1 };  // Default perpendicular up
+				let P2_target = { x: 0, y: -1 }; // Default perpendicular down
+
+				if (isProjectile && velocity) {
+					moveVec = { x: velocity.x * deltaTime, y: velocity.y * deltaTime };
+					nextX += moveVec.x;
+					nextY += moveVec.y;
+				} else if (moveTarget && speed) {
+					// Skip check if already avoiding/paused
+					const existingMovementState = entityManager.getComponent(movingEntity.id, 'movementState');
+					if (existingMovementState && (existingMovementState.avoidanceTimer > 0 || existingMovementState.collisionPauseTimer > 0)) {
+						continue;
+					}
+					
+					const V_to_target = { x: moveTarget.x - pos.x, y: moveTarget.y - pos.y };
+					const distToTarget = Math.sqrt(V_to_target.x * V_to_target.x + V_to_target.y * V_to_target.y);
+					if (distToTarget === 0) continue; 
+					
+					// Calculate normalized target direction and perpendiculars *here*
+					N_to_target = { x: V_to_target.x / distToTarget, y: V_to_target.y / distToTarget };
+					P1_target = { x: -N_to_target.y, y: N_to_target.x };
+					P2_target = { x: N_to_target.y, y: -N_to_target.x };
+					
+					const moveDist = speed * deltaTime;
+					const ratio = Math.min(1, moveDist / distToTarget);
+					moveVec = { x: V_to_target.x * ratio, y: V_to_target.y * ratio };
+					nextX += moveVec.x;
+					nextY += moveVec.y;
+				} else {
+					continue; // Entity isn't moving
 				}
-				// No need to check retry count here, movement system handles give up
-
-				// Calculate potential next position
-				const moveDist = speed * deltaTime;
-				const ratio = distToTarget > 0 ? Math.min(1, moveDist / distToTarget) : 1;
-				const nextX = pos.x + V_to_target.x * ratio;
-				const nextY = pos.y + V_to_target.y * ratio;
-
-				let movingEntityWillBeRemoved = false;
 
 				for (const otherEntity of allColliders) {
 					if (movingEntity.id === otherEntity.id) continue;
 
-					const otherPos = otherEntity.components.position;
-					const otherBody = otherEntity.components.collisionBody;
-					const collisionDist = body.radius + otherBody.radius;
-					const dxNext = nextX - otherPos.x;
-					const dyNext = nextY - otherPos.y;
-					const distSqNext = dxNext * dxNext + dyNext * dyNext;
+					const otherPos = otherEntity.components.position!;
+					const otherBody = otherEntity.components.collisionBody!;
+					const combinedRadius = body.radius + otherBody.radius;
 
-					if (distSqNext < collisionDist * collisionDist) {
-						// Collision detected! Check relative movement direction first.
-						
-						// Vector from other entity to moving entity (current position)
+					let collisionOccurred = false;
+					if (isProjectile) {
+						// Use swept check for projectiles
+						collisionOccurred = intersectLineSegmentCircle(pos, { x: nextX, y: nextY }, otherPos, otherBody.radius);
+					} else {
+						// Use point check for non-projectiles
+						const dxNext = nextX - otherPos.x;
+						const dyNext = nextY - otherPos.y;
+						const distSqNext = dxNext * dxNext + dyNext * dyNext;
+						collisionOccurred = distSqNext < combinedRadius * combinedRadius;
+					}
+
+					if (collisionOccurred) {
+						// Check relative movement to potentially ignore collision
 						const V_other_to_moving = { x: pos.x - otherPos.x, y: pos.y - otherPos.y };
-						
-						// Intended move vector for this frame
-						const moveVec = { x: nextX - pos.x, y: nextY - pos.y };
-						
-						// If moving away from the obstacle, ignore this collision pair
 						const dotProduct = dot(moveVec, V_other_to_moving);
-						if (dotProduct >= 0) {
-							continue; // Skip collision response (damage/avoidance)
+						if (dotProduct >= 0 && !isProjectile) { // Only ignore if NOT a projectile
+							continue; // Skip collision response
 						}
 
 						// --- Collision Response (Damage/Avoidance) --- 
-						// If dotProduct was negative, proceed with damage checks and potential avoidance
-
 						let damageDealt = false;
-						movingEntityWillBeRemoved = false; // Reset flag for this collision pair
+						let movingEntityWillBeRemoved = false;
+						let isProjectileTargetCollision = false;
 
-						// Check if movingEntity deals damage to otherEntity
+						// Check movingEntity deals damage
 						const attackerComp = movingEntity.components.dealsDamageOnCollision;
 						if (attackerComp && hasMatchingTag(otherEntity, attackerComp.targetTags)) {
 							const targetHealth = entityManager.getComponent(otherEntity.id, 'health');
 							if (targetHealth) {
 								targetHealth.current -= attackerComp.amount;
 								damageDealt = true;
+								if (isProjectile) isProjectileTargetCollision = true; // Track projectile hit
 								if (attackerComp.destroySelf) {
 									entityManager.addComponent(movingEntity.id, 'toBeRemoved', true);
 									movingEntityWillBeRemoved = true;
@@ -106,22 +126,22 @@ function collisionBundle() {
 							}
 						}
 						
-						// Check if otherEntity deals damage to movingEntity
+						// Check otherEntity deals damage
 						const otherAttackerComp = otherEntity.components.dealsDamageOnCollision;
-						if (otherAttackerComp && hasMatchingTag(movingEntity, otherAttackerComp.targetTags)) {
+						if (!movingEntityWillBeRemoved && otherAttackerComp && hasMatchingTag(movingEntity, otherAttackerComp.targetTags)) {
 							const targetHealth = entityManager.getComponent(movingEntity.id, 'health');
 							if (targetHealth) {
 								targetHealth.current -= otherAttackerComp.amount;
 								damageDealt = true;
+								if (otherEntity.components.projectile) isProjectileTargetCollision = true; // Track projectile hit
 								if (otherAttackerComp.destroySelf) {
 									entityManager.addComponent(otherEntity.id, 'toBeRemoved', true);
-									// Don't set movingEntityWillBeRemoved here, only if the moving entity itself is destroyed
 								}
 							}
 						}
 
-						// --- Initiate pause/avoidance only if moving entity wasn't destroyed by damage --- 
-						if (!movingEntityWillBeRemoved) {
+						// --- Initiate pause/avoidance only if moving entity wasn't destroyed AND it wasn't a projectile hitting its target --- 
+						if (!movingEntityWillBeRemoved && !isProjectileTargetCollision && !isProjectile) { // Also check !isProjectile to prevent projectiles from avoiding
 							// Get or add movement state
 							let movementState = entityManager.getComponent(movingEntity.id, 'movementState');
 							let initialState: Components['movementState']; // Define initial state structure
@@ -143,11 +163,13 @@ function collisionBundle() {
 							movementState.collisionRetryCount = newRetryCount;
 
 							if (newRetryCount < MAX_COLLISION_RETRIES) {
+								// Calculate Avoidance Direction
 								const hitObstaclePos = otherPos;
 								const V_obs_to_curr = { x: pos.x - hitObstaclePos.x, y: pos.y - hitObstaclePos.y };
 								const N_obs_to_curr = normalize(V_obs_to_curr);
 								const P1_obs = { x: -N_obs_to_curr.y, y: N_obs_to_curr.x };
 								const P2_obs = { x: N_obs_to_curr.y, y: -N_obs_to_curr.x };
+								// Uses N_to_target, P1_target, P2_target calculated earlier
 								const chosen_P_obs = dot(P1_obs, N_to_target) >= dot(P2_obs, N_to_target) ? P1_obs : P2_obs;
 								const chosen_P_target = dot(P1_target, chosen_P_obs) >= dot(P2_target, chosen_P_obs) ? P1_target : P2_target;
 								const randomBiasFactor = AVOIDANCE_BIAS_FACTOR + (Math.random() - 0.5) * BIAS_RANDOMNESS;
@@ -164,7 +186,7 @@ function collisionBundle() {
 								movementState!.avoidanceDirection = finalAvoidanceDir;
 							}
 						}
-						break; // Collision processed (either ignored, damage dealt, or avoidance started)
+						break; // Collision processed
 					}
 				}
 			}

@@ -131,6 +131,35 @@ export function dot(v1: Vector2D, v2: Vector2D): number {
 	return v1.x * v2.x + v1.y * v2.y;
 }
 
+/**
+ * Checks if a line segment intersects with a circle.
+ * @param p1 Start point of the line segment.
+ * @param p2 End point of the line segment.
+ * @param center Center of the circle.
+ * @param radius Radius of the circle.
+ * @returns True if they intersect, false otherwise.
+ */
+export function intersectLineSegmentCircle(p1: Vector2D, p2: Vector2D, center: Vector2D, radius: number): boolean {
+	const dx = p2.x - p1.x;
+	const dy = p2.y - p1.y;
+	const lenSq = dx * dx + dy * dy;
+
+	// Parameter t representing the projection of center onto the line extending the segment
+	// Clamp t to [0, 1] to stay within the segment
+	let t = ((center.x - p1.x) * dx + (center.y - p1.y) * dy) / lenSq;
+	t = Math.max(0, Math.min(1, t)); // Clamp t to the segment
+
+	// Calculate the closest point on the line segment to the circle center
+	const closestX = p1.x + t * dx;
+	const closestY = p1.y + t * dy;
+
+	// Calculate the distance squared from the closest point to the center
+	const distSq = Math.pow(center.x - closestX, 2) + Math.pow(center.y - closestY, 2);
+
+	// Check if the distance squared is less than or equal to the radius squared
+	return distSq <= radius * radius;
+}
+
 // --- End Vector Math Helpers ---
 
 export const sciFiNameGenerator = new SciFiNameGenerator();
