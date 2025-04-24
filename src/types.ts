@@ -4,8 +4,8 @@ import type { Application, Container, Graphics } from "pixi.js";
 
 export type Enum<T extends object> = T[keyof T];
 
-// TODO: Maybe resources and events are fine centralized? Maybe only components
-// have the orgnaizational issues...?
+// TODO: Maybe resources and events are fine centralized Maybe only components
+// have the orgnaizational issues...
 
 export
 type Game = ECSpresso<Components, Events, Resources>;
@@ -43,28 +43,28 @@ interface Components {
 	owner: 'player' | 'ai' | 'neutral';
 	selectable: true;
 	renderContainer: Container;
-	enemyUnit?: true;
-	playerUnitTag?: true; // Add tag for player units
-	baseTag?: true; // Add tag for the base
+	enemyUnit: true;
+	playerUnitTag: true; // Add tag for player units
+	baseTag: true; // Add tag for the base
 
 	// Removed: shooter component
-	// shooter?: { 
+	// shooter: { 
 	// 	range: number;
 	// 	attackSpeed: number; 
 	// 	cooldownTimer: number; 
 	// 	projectileDamage: number;
 	// };
 
-	weaponSlots?: { // Replaces shooter, allows multiple weapons
+	weaponSlots: { // Replaces shooter, allows multiple weapons
 		slots: Weapon[];
 	};
 
-	velocity?: { // Added for projectiles
+	velocity: { // Added for projectiles
 		x: number;
 		y: number;
 	};
 
-	projectile?: true; // Tag for projectile entities
+	projectile: true; // Tag for projectile entities
 
 	speed: number;
 
@@ -82,25 +82,25 @@ interface Components {
 		// Potentially add type: 'circle' | 'rectangle' in the future
 	};
 
-	movementState?: {
+	movementState: {
 		collisionPauseTimer: number; // Time remaining in pause before avoidance
 		avoidanceTimer: number; // Time remaining for orthogonal avoidance move
 		avoidanceDirection: Vector2D; // Direction for avoidance move
 		collisionRetryCount: number; // Number of consecutive collisions/avoidance maneuvers
 	};
 
-	health?: { // Optional, not everything has health
+	health: { // Optional, not everything has health
 		current: number;
 		max: number;
 	};
 
-	dealsDamageOnCollision?: {
+	dealsDamageOnCollision: {
 		amount: number;
 		targetTags: CollisionTargetTag[]; // Specify which tags this entity damages
-		destroySelf: boolean; // Does this entity get destroyed after dealing damage?
+		destroySelf: boolean; // Does this entity get destroyed after dealing damage
 	};
 
-	toBeRemoved?: true; // Flag for entity removal
+	toBeRemoved: true; // Flag for entity removal
 
 	selected: {
 		graphic: Graphics;
