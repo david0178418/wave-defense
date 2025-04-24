@@ -17,6 +17,10 @@
 - Do not edit test files unless explicitly directed.
 - If contradictions are found between implementation and test files, ask for clarification.
 
+### ECS
+- When adding an optional ECS component and needing to immediately use it, ensure type safety. If TypeScript inference struggles (e.g., after `entityManager.addComponent`), explicitly re-`getComponent` the component and use a type guard (`if (!component) { ... }`) before accessing its properties to satisfy strict checks.
+- Prefer deriving system behavior from existing component state (e.g., checking if `pauseTimer > 0`) rather than introducing temporary flag components solely for signaling between systems, especially when system execution order is predictable.
+
 ### Frameworks/Libraries
 - Utilize `ecspresso` for Entity-Component-System architecture. Follow existing patterns for creating entities, components, systems, and bundles.
     - **Bundles:**
@@ -33,3 +37,4 @@
 - Place core game logic within the `src` directory.
 - Organize code by feature or domain (e.g., `bundles`, `entities`, `components`, `systems`). 
 - Always attempt to implement new logic in new systems and/or bundles as opposed to overloading existing logic
+- Proactively identify magic numbers or configuration values used across multiple files and centralize them into a dedicated constants file (e.g., `constants.ts`). Similarly, move general utility functions (e.g., vector math) into a shared utility file (e.g., `utils.ts`).
