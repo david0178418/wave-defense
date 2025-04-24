@@ -107,7 +107,6 @@ function collisionBundle() {
 						}
 
 						// --- Collision Response (Damage/Avoidance) --- 
-						let damageDealt = false;
 						let movingEntityWillBeRemoved = false;
 						let isProjectileTargetCollision = false;
 
@@ -117,7 +116,6 @@ function collisionBundle() {
 							const targetHealth = entityManager.getComponent(otherEntity.id, 'health');
 							if (targetHealth) {
 								targetHealth.current -= attackerComp.amount;
-								damageDealt = true;
 								if (isProjectile) isProjectileTargetCollision = true; // Track projectile hit
 								if (attackerComp.destroySelf) {
 									entityManager.addComponent(movingEntity.id, 'toBeRemoved', true);
@@ -132,7 +130,6 @@ function collisionBundle() {
 							const targetHealth = entityManager.getComponent(movingEntity.id, 'health');
 							if (targetHealth) {
 								targetHealth.current -= otherAttackerComp.amount;
-								damageDealt = true;
 								if (otherEntity.components.projectile) isProjectileTargetCollision = true; // Track projectile hit
 								if (otherAttackerComp.destroySelf) {
 									entityManager.addComponent(otherEntity.id, 'toBeRemoved', true);
