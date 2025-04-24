@@ -96,7 +96,24 @@ function shootingBundle() {
 						}
 						// --- End Target Leading Logic ---
 
-						const velocity = { x: firingDirection.x * PROJECTILE_SPEED, y: firingDirection.y * PROJECTILE_SPEED };
+						let finalDirection = firingDirection;
+						
+						// Apply Spread if applicable
+						if (weapon.spreadAngle > 0) {
+							const angleOffsetDeg = (Math.random() - 0.5) * weapon.spreadAngle;
+							const angleOffsetRad = angleOffsetDeg * (Math.PI / 180);
+							const cosA = Math.cos(angleOffsetRad);
+							const sinA = Math.sin(angleOffsetRad);
+							
+							finalDirection = {
+								x: firingDirection.x * cosA - firingDirection.y * sinA,
+								y: firingDirection.x * sinA + firingDirection.y * cosA
+							};
+							// Re-normalize just in case of floating point errors, though rotation should preserve length
+							finalDirection = normalize(finalDirection);
+						}
+
+						const velocity = { x: finalDirection.x * PROJECTILE_SPEED, y: finalDirection.y * PROJECTILE_SPEED };
 						
 						// Generate graphic using the weapon's function
 						const projectileGraphic = weapon.projectileGraphicFn();

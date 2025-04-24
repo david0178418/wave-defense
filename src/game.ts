@@ -56,8 +56,8 @@ const ecs = ECSpresso.create<Components, Events, Resources>()
 		},
 	})
 	.addResource('enemySpawnConfig', {
-		timer: 5.0,
-		interval: 5.0,
+		timer: 2.0,
+		interval: 2.0,
 		targetPosition: { x: 500, y: 500 },
 	});
 

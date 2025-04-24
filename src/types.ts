@@ -32,6 +32,7 @@ export interface Weapon {
 	cooldownTimer: number; // Time until next shot
 	projectileDamage: number;
 	projectileGraphicFn: () => Graphics; // Function to generate projectile appearance
+	spreadAngle: number; // Max angle offset in degrees (0 for perfect accuracy)
 }
 
 export

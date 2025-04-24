@@ -48,18 +48,20 @@ function createPlayerUnit({ x, y }: Vector2D, ecs: ECSpresso<Components, Events,
 	ecs.entityManager.addComponent(entity, 'speed', 150);
 
 	const weapon1: Weapon = { // Standard weapon
-		range: 200,
+		range: 125,
 		attackSpeed: 1.5,
 		cooldownTimer: 0,
 		projectileDamage: 5,
-		projectileGraphicFn: () => createProjectileGraphic(0xFFFF00) // Yellow
+		projectileGraphicFn: () => createProjectileGraphic(0xFFFF00),
+		spreadAngle: 0 // No spread
 	};
 	const weapon2: Weapon = { // Machine gun
-		range: 180, // Slightly shorter range
+		range: 250, // Slightly shorter range
 		attackSpeed: 6, // Much faster
 		cooldownTimer: 0.1, // Slight initial delay staggers shots
 		projectileDamage: 1, // Lower damage
-		projectileGraphicFn: () => createProjectileGraphic(0xFF8C00, 3) // Orange, slightly smaller
+		projectileGraphicFn: () => createProjectileGraphic(0xFF8C00, 3), // Orange, slightly smaller
+		spreadAngle: 20 // 10 degree spread (+/- 5 degrees)
 	};
 
 	ecs.entityManager.addComponent(entity, 'weaponSlots', { slots: [
