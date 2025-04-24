@@ -18,6 +18,7 @@
 - If contradictions are found between implementation and test files, ask for clarification.
 
 ### ECS
+- When defining components within the main `Components` interface (e.g., in `types.ts`), declare the component keys and their types directly. Do not mark them as optional (`?:`), as the interface defines the structure of available components, not whether a specific entity has them.
 - When adding an optional ECS component and needing to immediately use it, ensure type safety. If TypeScript inference struggles (e.g., after `entityManager.addComponent`), explicitly re-`getComponent` the component and use a type guard (`if (!component) { ... }`) before accessing its properties to satisfy strict checks.
 - Prefer deriving system behavior from existing component state (e.g., checking if `pauseTimer > 0`) rather than introducing temporary flag components solely for signaling between systems, especially when system execution order is predictable.
 
