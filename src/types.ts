@@ -23,7 +23,7 @@ interface Spawner {
 }
 
 // Define tags used for collision targeting
-export type CollisionTargetTag = 'baseTag' | 'playerUnitTag' | 'enemyUnit'; // Export the type
+export type CollisionTargetTag = 'baseTag' | 'playerUnitTag' | 'enemyUnitTag'; // Renamed from enemyUnit
 
 // Define Weapon configuration
 export interface Weapon {
@@ -31,8 +31,8 @@ export interface Weapon {
 	attackSpeed: number; // Attacks per second
 	cooldownTimer: number; // Time until next shot
 	projectileDamage: number;
-	projectileGraphicFn: () => Graphics; // Function to generate projectile appearance
-	spreadAngle: number; // Max angle offset in degrees (0 for perfect accuracy)
+	projectileGraphicFn: () => Graphics; 
+	spreadAngle: number; 
 }
 
 export
@@ -44,19 +44,13 @@ interface Components {
 	owner: 'player' | 'ai' | 'neutral';
 	selectable: true;
 	renderContainer: Container;
-	enemyUnit: true;
-	playerUnitTag: true; // Add tag for player units
-	baseTag: true; // Add tag for the base
+	enemyUnitTag: true; // Renamed for consistency
+	playerUnitTag: true; 
+	baseTag: true; 
 
-	// Removed: shooter component
-	// shooter: { 
-	// 	range: number;
-	// 	attackSpeed: number; 
-	// 	cooldownTimer: number; 
-	// 	projectileDamage: number;
-	// };
+	// shooter component was removed and replaced by weaponSlots
 
-	weaponSlots: { // Replaces shooter, allows multiple weapons
+	weaponSlots: { 
 		slots: Weapon[];
 	};
 

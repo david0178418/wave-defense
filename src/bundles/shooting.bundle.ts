@@ -2,8 +2,7 @@ import type { Components, Events, Resources, Vector2D } from "@/types";
 import { Bundle, type Entity } from "ecspresso";
 import { createProjectile } from "@/entities";
 import { normalize, dot } from "@/utils";
-
-const PROJECTILE_SPEED = 400;
+import { PROJECTILE_SPEED } from "@/constants";
 
 // Function to solve quadratic: ax^2 + bx + c = 0
 // Returns the smallest positive real root, or null if none exists.
@@ -33,7 +32,7 @@ function shootingBundle() {
 		// --- System 1: Target Acquisition & Firing ---
 		.addSystem('target-acquisition-and-firing')
 		.addQuery('shooters', { with: ['weaponSlots', 'position', 'playerUnitTag'] })
-		.addQuery('targets', { with: ['enemyUnit', 'position', 'speed'] })
+		.addQuery('targets', { with: ['enemyUnitTag', 'position', 'speed'] })
 		.setProcess((data, deltaTime, ecs) => {
 			const allTargets = Array.from(data.targets);
 			if (allTargets.length === 0) return;
@@ -115,11 +114,17 @@ function shootingBundle() {
 
 						const velocity = { x: finalDirection.x * PROJECTILE_SPEED, y: finalDirection.y * PROJECTILE_SPEED };
 						
-						// Generate graphic using the weapon's function
+						// Generate graphic using the weapon's function (Restored)
 						const projectileGraphic = weapon.projectileGraphicFn();
 
-						// Create projectile, passing the specific graphic and damage
-						createProjectile(shooterPos, velocity, weapon.projectileDamage, projectileGraphic, ecs);
+						// Create projectile, passing the specific graphic and damage (Restored)
+						createProjectile(
+							shooterPos, 
+							velocity, 
+							weapon.projectileDamage, 
+							projectileGraphic, // Pass graphic again
+							ecs
+						);
 					}
 				} // End loop through weapons
 			} // End loop through shooters

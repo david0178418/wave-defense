@@ -17,7 +17,7 @@ function hasMatchingTag(entity: Entity<Components>, tags: CollisionTargetTag[]):
 		switch (tag) {
 			case 'baseTag': if (entity.components.baseTag) return true; break;
 			case 'playerUnitTag': if (entity.components.playerUnitTag) return true; break;
-			case 'enemyUnit': if (entity.components.enemyUnit) return true; break;
+			case 'enemyUnitTag': if (entity.components.enemyUnitTag) return true; break;
 			// Add cases for any future tags
 		}
 	}

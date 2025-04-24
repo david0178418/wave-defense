@@ -2,8 +2,7 @@ import type { Components, Events, Resources } from "@/types";
 import { Bundle } from "ecspresso";
 import { createEnemyUnit } from "@/entities";
 import { randomInt } from "@/utils";
-
-const SPAWN_EDGE_BUFFER = 50; // How far off-screen to spawn enemies
+import { SPAWN_EDGE_BUFFER } from "@/constants";
 
 export default
 function enemySpawningBundle() {

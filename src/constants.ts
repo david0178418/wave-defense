@@ -8,4 +8,9 @@ export const COLLISION_PAUSE_DURATION = 0.2; // seconds
 export const AVOIDANCE_BIAS_FACTOR = 0.5; // How much to bias perp-obstacle dir with perp-target dir
 export const BIAS_RANDOMNESS = 0.3; // Range for randomizing bias factor
 export const PAUSE_RANDOMNESS = 0.3; // Range for randomizing pause duration
- 
+
+// Spawning
+export const SPAWN_EDGE_BUFFER = 50; // How far off-screen to spawn enemies
+
+// Shooting
+export const PROJECTILE_SPEED = 400; 
