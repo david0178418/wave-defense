@@ -105,7 +105,7 @@ function createEnemyUnit({ x, y }: Vector2D, ecs: ECSpresso<Components, Events, 
 	ecs.entityManager.addComponent(entity, 'moveable', true);
 	ecs.entityManager.addComponent(entity, 'enemyUnit', true); // Mark as enemy
 	ecs.entityManager.addComponent(entity, 'speed', 100); // Slightly slower? Adjust as needed
-	ecs.entityManager.addComponent(entity, 'health', { current: 5, max: 5 });
+	ecs.entityManager.addComponent(entity, 'health', { current: 25, max: 25 });
 	ecs.entityManager.addComponent(entity, 'dealsDamageOnCollision', {
 		amount: 5,
 		targetTags: ['baseTag'],

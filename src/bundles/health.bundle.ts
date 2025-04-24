@@ -9,8 +9,7 @@ function healthBundle() {
 		.addQuery('livingEntities', { with: ['health'], without: ['toBeRemoved'] })
 		.setProcess((data, _deltaTime, { entityManager }) => {
 			for (const entity of data.livingEntities) {
-				const health = entity.components.health;
-				if (health && health.current <= 0) {
+				if (entity.components.health.current <= 0) {
 					// Mark for removal
 					entityManager.addComponent(entity.id, 'toBeRemoved', true);
 				}
