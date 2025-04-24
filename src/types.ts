@@ -22,6 +22,9 @@ interface Spawner {
 	spawnCallback(): void;
 }
 
+// Define tags used for collision targeting
+export type CollisionTargetTag = 'baseTag' | 'playerUnitTag' | 'enemyUnit'; // Export the type
+
 export
 interface Components {
 	hoverable: true;
@@ -32,6 +35,8 @@ interface Components {
 	selectable: true;
 	renderContainer: Container;
 	enemyUnit?: true;
+	playerUnitTag?: true; // Add tag for player units
+	baseTag?: true; // Add tag for the base
 
 	speed: number;
 
@@ -55,6 +60,19 @@ interface Components {
 		avoidanceDirection: Vector2D; // Direction for avoidance move
 		collisionRetryCount: number; // Number of consecutive collisions/avoidance maneuvers
 	};
+
+	health?: { // Optional, not everything has health
+		current: number;
+		max: number;
+	};
+
+	dealsDamageOnCollision?: {
+		amount: number;
+		targetTags: CollisionTargetTag[]; // Specify which tags this entity damages
+		destroySelf: boolean; // Does this entity get destroyed after dealing damage?
+	};
+
+	toBeRemoved?: true; // Flag for entity removal
 
 	selected: {
 		graphic: Graphics;

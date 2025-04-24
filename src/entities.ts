@@ -37,6 +37,7 @@ function createPlayerUnit({ x, y }: Vector2D, ecs: ECSpresso<Components, Events,
 	ecs.entityManager.addComponent(entity, 'name', 'Player Unit');
 	ecs.entityManager.addComponent(entity, 'selectable', true);
 	ecs.entityManager.addComponent(entity, 'moveable', true);
+	ecs.entityManager.addComponent(entity, 'playerUnitTag', true);
 	ecs.entityManager.addComponent(entity, 'speed', 150);
 
 	return entity;
@@ -77,6 +78,12 @@ function createEnemyUnit({ x, y }: Vector2D, ecs: ECSpresso<Components, Events, 
 	ecs.entityManager.addComponent(entity, 'moveable', true);
 	ecs.entityManager.addComponent(entity, 'enemyUnit', true); // Mark as enemy
 	ecs.entityManager.addComponent(entity, 'speed', 100); // Slightly slower? Adjust as needed
+	ecs.entityManager.addComponent(entity, 'health', { current: 5, max: 5 });
+	ecs.entityManager.addComponent(entity, 'dealsDamageOnCollision', {
+		amount: 5,
+		targetTags: ['baseTag'],
+		destroySelf: true
+	});
 
 	return entity;
 }
@@ -109,6 +116,9 @@ function createBase(x: number, y: number, ecs: ECSpresso<Components, Events, Res
 	ecs.entityManager.addComponent(entity, 'renderContainer', container);
 	ecs.entityManager.addComponent(entity, 'renderLayer', 'foreground');
 	ecs.entityManager.addComponent(entity, 'position', { x, y });
+	ecs.entityManager.addComponent(entity, 'collisionBody', { radius: 75 });
+	ecs.entityManager.addComponent(entity, 'health', { current: 100, max: 100 });
+	ecs.entityManager.addComponent(entity, 'baseTag', true);
 	ecs.entityManager.addComponent(entity, 'name', 'Base');
 	ecs.entityManager.addComponent(entity, 'selectable', true);
 	ecs.entityManager.addComponent(entity, 'rallyPoint', {

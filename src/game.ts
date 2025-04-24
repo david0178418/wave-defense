@@ -9,17 +9,21 @@ import spawnBundle from '@/bundles/spawn.bundle';
 import controlsBundle from './bundles/controls-bundle.bundle';
 import collisionBundle from './bundles/collision.bundle';
 import enemySpawningBundle from './bundles/enemy-spawning.bundle';
+import healthBundle from './bundles/health.bundle';
+import cleanupBundle from './bundles/cleanup.bundle';
 import { createBase, createPlayerUnit } from './entities';
 
 const ecs = ECSpresso.create<Components, Events, Resources>()
 	.withBundle(initializeGameBundle())
 	.withBundle(mapInitializationBundle())
-	.withBundle(renderBundle())
+	.withBundle(controlsBundle())
+	.withBundle(enemySpawningBundle())
+	.withBundle(spawnBundle())
 	.withBundle(collisionBundle())
 	.withBundle(movementBundle())
-	.withBundle(spawnBundle())
-	.withBundle(enemySpawningBundle())
-	.withBundle(controlsBundle())
+	.withBundle(healthBundle())
+	.withBundle(renderBundle())
+	.withBundle(cleanupBundle())
 	.withBundle(
 		new Bundle<Components, Events, Resources>()
 			.addSystem('spawns')
