@@ -31,6 +31,7 @@ interface Components {
 	owner: 'player' | 'ai' | 'neutral';
 	selectable: true;
 	renderContainer: Container;
+	enemyUnit?: true;
 
 	speed: number;
 
@@ -131,6 +132,11 @@ interface Resources {
 			width: number;
 			height: number;
 		};
+	};
+	enemySpawnConfig: {
+		timer: number;
+		interval: number;
+		targetPosition: Vector2D;
 	};
 }
 

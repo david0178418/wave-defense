@@ -8,6 +8,7 @@ import movementBundle from '@/bundles/movement.bundle';
 import spawnBundle from '@/bundles/spawn.bundle';
 import controlsBundle from './bundles/controls-bundle.bundle';
 import collisionBundle from './bundles/collision.bundle';
+import enemySpawningBundle from './bundles/enemy-spawning.bundle';
 import { createBase, createPlayerUnit } from './entities';
 
 const ecs = ECSpresso.create<Components, Events, Resources>()
@@ -17,6 +18,7 @@ const ecs = ECSpresso.create<Components, Events, Resources>()
 	.withBundle(collisionBundle())
 	.withBundle(movementBundle())
 	.withBundle(spawnBundle())
+	.withBundle(enemySpawningBundle())
 	.withBundle(controlsBundle())
 	.withBundle(
 		new Bundle<Components, Events, Resources>()
@@ -46,6 +48,11 @@ const ecs = ECSpresso.create<Components, Events, Resources>()
 			width: 2000,
 			height: 2000,
 		},
+	})
+	.addResource('enemySpawnConfig', {
+		timer: 5.0,
+		interval: 5.0,
+		targetPosition: { x: 500, y: 500 },
 	});
 
 await ecs.initialize();

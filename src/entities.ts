@@ -43,6 +43,45 @@ function createPlayerUnit({ x, y }: Vector2D, ecs: ECSpresso<Components, Events,
 }
 
 export
+function createEnemyUnit({ x, y }: Vector2D, ecs: ECSpresso<Components, Events, Resources>) {
+	const entity = ecs.entityManager.createEntity();
+	const pixi = ecs.resourceManager.get('pixi');
+	const sprite = new Sprite(
+		pixi.renderer.generateTexture(
+			new Graphics()
+				.rect(0, 0, 25, 25) // Same size for now
+				.fill(0xFF0000) // Red color
+		)
+	);
+	const container = new Container({
+		position: {
+			x,
+			y,
+		},
+		isRenderGroup: true,
+		children: [sprite],
+	});
+
+	sprite.anchor.set(.5, .5);
+
+	// Don't make enemies interactive for now
+	// container.interactive = true;
+	// container.cursor = 'pointer';
+
+	ecs.entityManager.addComponent(entity, 'renderContainer', container);
+	ecs.entityManager.addComponent(entity, 'renderLayer', 'foreground');
+	ecs.entityManager.addComponent(entity, 'position', { x, y });
+	ecs.entityManager.addComponent(entity, 'collisionBody', { radius: 12.5 }); // Make them collide
+	ecs.entityManager.addComponent(entity, 'name', 'Enemy Unit');
+	// ecs.entityManager.addComponent(entity, 'selectable', true); // Not selectable
+	ecs.entityManager.addComponent(entity, 'moveable', true);
+	ecs.entityManager.addComponent(entity, 'enemyUnit', true); // Mark as enemy
+	ecs.entityManager.addComponent(entity, 'speed', 100); // Slightly slower? Adjust as needed
+
+	return entity;
+}
+
+export
 function createBase(x: number, y: number, ecs: ECSpresso<Components, Events, Resources>) {
 	const entity = ecs.entityManager.createEntity();
 	const pixi = ecs.resourceManager.get('pixi');
