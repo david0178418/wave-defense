@@ -1,10 +1,25 @@
 import type { Components, Events, Resources, Vector2D } from "@/types";
 import { Bundle } from "ecspresso";
+import { MAX_COLLISION_RETRIES } from "@/constants"; // Import shared constant
 
 const AVOIDANCE_DURATION = 0.3; // seconds
 const COLLISION_PAUSE_DURATION = 0.2; // seconds
-const MAX_COLLISION_RETRIES = 3;
-const AVOIDANCE_BIAS_FACTOR = 0.5; // How much to curve towards target during avoidance (0=pure perpendicular, 1=mostly target)
+const AVOIDANCE_BIAS_FACTOR = 0.5; // How much to bias perp-obstacle dir with perp-target dir
+
+// Define randomness ranges
+const BIAS_RANDOMNESS = 0.3; // e.g., 0.5 +/- (0.2 / 2) => range 0.4 to 0.6
+const PAUSE_RANDOMNESS = 0.3; // e.g., 0.2 +/- (0.1 / 2) => range 0.15 to 0.25
+
+// Helper: Normalize vector, return fallback if length is zero
+function normalize(v: Vector2D, fallback: Vector2D = { x: 1, y: 0 }): Vector2D {
+	const len = Math.sqrt(v.x * v.x + v.y * v.y);
+	return len > 0 ? { x: v.x / len, y: v.y / len } : fallback;
+}
+
+// Helper: Dot product
+function dot(v1: Vector2D, v2: Vector2D): number {
+	return v1.x * v2.x + v1.y * v2.y;
+}
 
 export default
 function collisionBundle() {
@@ -31,25 +46,29 @@ function collisionBundle() {
 				const speed = movingEntity.components.speed;
 				const body = movingEntity.components.collisionBody;
 
-				// Calculate potential next position based on target
-				const dx = target.x - pos.x;
-				const dy = target.y - pos.y;
-				const dist = Math.sqrt(dx * dx + dy * dy);
-				if (dist === 0) continue;
+				// Vector towards target
+				const V_to_target = { x: target.x - pos.x, y: target.y - pos.y };
+				const distToTarget = Math.sqrt(V_to_target.x * V_to_target.x + V_to_target.y * V_to_target.y);
+				if (distToTarget === 0) continue;
+				const N_to_target = { x: V_to_target.x / distToTarget, y: V_to_target.y / distToTarget };
+
+				// Perpendiculars to target path
+				const P1_target = { x: -N_to_target.y, y: N_to_target.x };
+				const P2_target = { x: N_to_target.y, y: -N_to_target.x };
+
+				// Calculate potential next position (needed for collision check)
 				const moveDist = speed * deltaTime;
-				const ratio = Math.min(1, moveDist / dist);
-				const nextX = pos.x + dx * ratio;
-				const nextY = pos.y + dy * ratio;
+				const ratio = Math.min(1, moveDist / distToTarget);
+				const nextX = pos.x + V_to_target.x * ratio;
+				const nextY = pos.y + V_to_target.y * ratio;
 
 				let collisionFound = false;
-				let collisionVector: Vector2D | null = null; // Store vector FROM obstacle TO moving entity
+				let hitObstaclePos: Vector2D | null = null;
 
 				for (const otherEntity of allColliders) {
 					if (movingEntity.id === otherEntity.id) continue;
-
 					const otherPos = otherEntity.components.position;
 					const otherBody = otherEntity.components.collisionBody;
-
 					const collisionDist = body.radius + otherBody.radius;
 					const dxNext = nextX - otherPos.x;
 					const dyNext = nextY - otherPos.y;
@@ -57,63 +76,54 @@ function collisionBundle() {
 
 					if (distSqNext < collisionDist * collisionDist) {
 						collisionFound = true;
-						// Use the vector from the collided object to the potential next position
-						collisionVector = { x: dxNext, y: dyNext };
+						hitObstaclePos = otherPos;
 						break;
 					}
 				}
 
-				if (collisionFound && collisionVector) {
+				if (collisionFound && hitObstaclePos) {
 					const currentRetryCount = movementState?.collisionRetryCount || 0;
 					const newRetryCount = currentRetryCount + 1;
 
-					// Calculate base perpendicular avoidance direction
-					const cvLength = Math.sqrt(collisionVector.x * collisionVector.x + collisionVector.y * collisionVector.y);
-					let perpDir: Vector2D;
-					if (cvLength > 0) {
-						const nx = collisionVector.x / cvLength;
-						const ny = collisionVector.y / cvLength;
-						if (Math.random() < 0.5) {
-							perpDir = { x: -ny, y: nx }; 
-						} else {
-							perpDir = { x: ny, y: -nx };
-						}
-					} else {
-						perpDir = { x: 1, y: 0 }; // Fallback
-					}
-
-					// Calculate normalized direction towards the target
-					const targetDir = { x: dx / dist, y: dy / dist }; // dist is non-zero here
-
-					// Blend perpendicular direction with target direction
-					const biasedVecX = perpDir.x + targetDir.x * AVOIDANCE_BIAS_FACTOR;
-					const biasedVecY = perpDir.y + targetDir.y * AVOIDANCE_BIAS_FACTOR;
-					const biasedVecLen = Math.sqrt(biasedVecX * biasedVecX + biasedVecY * biasedVecY);
-
-					let finalAvoidanceDir: Vector2D;
-					if (biasedVecLen > 0) {
-						finalAvoidanceDir = { x: biasedVecX / biasedVecLen, y: biasedVecY / biasedVecLen };
-					} else {
-						finalAvoidanceDir = perpDir; // Fallback to pure perpendicular if bias cancels out
-					}
-
-					// Add or update movement state for pause and subsequent avoidance
+					// --- Update retry count regardless --- 
 					if (movementState) {
-						movementState.collisionPauseTimer = COLLISION_PAUSE_DURATION;
-						movementState.avoidanceTimer = AVOIDANCE_DURATION;
-						movementState.avoidanceDirection = finalAvoidanceDir;
 						movementState.collisionRetryCount = newRetryCount;
 					} else {
+						// If state doesn't exist, need to add it with the count
 						entityManager.addComponent(movingEntity.id, 'movementState', {
-							collisionPauseTimer: COLLISION_PAUSE_DURATION,
-							avoidanceTimer: AVOIDANCE_DURATION,
-							avoidanceDirection: finalAvoidanceDir,
+							collisionPauseTimer: 0,
+							avoidanceTimer: 0,
+							avoidanceDirection: { x: 0, y: 0 }, // Placeholder
 							collisionRetryCount: newRetryCount,
 						});
 					}
 
-					// Signal movement system
-					if (newRetryCount <= MAX_COLLISION_RETRIES) {
+					// --- Initiate pause/avoidance only if below retry limit --- 
+					if (newRetryCount < MAX_COLLISION_RETRIES) {
+						// Calculate Avoidance Direction (with randomized bias) 
+						const V_obs_to_curr = { x: pos.x - hitObstaclePos.x, y: pos.y - hitObstaclePos.y };
+						const N_obs_to_curr = normalize(V_obs_to_curr);
+						const P1_obs = { x: -N_obs_to_curr.y, y: N_obs_to_curr.x };
+						const P2_obs = { x: N_obs_to_curr.y, y: -N_obs_to_curr.x };
+						const chosen_P_obs = dot(P1_obs, N_to_target) >= dot(P2_obs, N_to_target) ? P1_obs : P2_obs;
+						const chosen_P_target = dot(P1_target, chosen_P_obs) >= dot(P2_target, chosen_P_obs) ? P1_target : P2_target;
+						const randomBiasFactor = AVOIDANCE_BIAS_FACTOR + (Math.random() - 0.5) * BIAS_RANDOMNESS;
+						const effectiveBiasFactor = Math.max(0, Math.min(1, randomBiasFactor)); 
+						const biasedVecX = chosen_P_obs.x + chosen_P_target.x * effectiveBiasFactor;
+						const biasedVecY = chosen_P_obs.y + chosen_P_target.y * effectiveBiasFactor;
+						const finalAvoidanceDir = normalize({ x: biasedVecX, y: biasedVecY }, chosen_P_obs);
+
+						// Calculate randomized pause duration
+						const randomPauseDuration = COLLISION_PAUSE_DURATION + (Math.random() - 0.5) * PAUSE_RANDOMNESS;
+						const effectivePauseDuration = Math.max(0, randomPauseDuration);
+
+						// Update remaining state fields (timers, direction)
+						const stateToUpdate = entityManager.getComponent(movingEntity.id, 'movementState')!;
+						stateToUpdate.collisionPauseTimer = effectivePauseDuration;
+						stateToUpdate.avoidanceTimer = AVOIDANCE_DURATION;
+						stateToUpdate.avoidanceDirection = finalAvoidanceDir;
+
+						// Signal movement system
 						entityManager.addComponent(movingEntity.id, 'collisionDetected', true);
 					}
 				}

@@ -1,7 +1,7 @@
 import type { Components, Events, Resources } from "@/types";
 import { Bundle } from "ecspresso";
+import { MAX_COLLISION_RETRIES } from "@/constants"; // Import shared constant
 
-const MAX_COLLISION_RETRIES = 5; // Ensure this matches collision.bundle.ts
 
 export default
 function movementBundle() {
@@ -67,15 +67,23 @@ function movementBundle() {
 
 				const movementState = entity.components.movementState;
 
-				// Order matters: Pause -> Avoid -> Give Up -> Move Target
+				// Order matters: Give Up -> Pause -> Avoid -> Move Target
 
-				// 1. Check pause state
+				// 1. Check if giving up (retries exceeded)
+				if (movementState && movementState.collisionRetryCount >= MAX_COLLISION_RETRIES) {
+					// Give up
+					entityManager.removeComponent(entity.id, 'moveTarget');
+					entityManager.removeComponent(entity.id, 'movementState');
+					continue; // Skip movement
+				}
+
+				// 2. Check pause state
 				if (movementState && movementState.collisionPauseTimer > 0) {
 					movementState.collisionPauseTimer -= deltaTime;
 					continue; // Skip movement while paused
 				}
 
-				// 2. Check if in avoidance mode (and pause is finished)
+				// 3. Check if in avoidance mode (and pause is finished)
 				if (movementState && movementState.avoidanceTimer > 0) {
 					movementState.avoidanceTimer -= deltaTime;
 					
@@ -87,15 +95,7 @@ function movementBundle() {
 					continue; // Skip target-directed movement for this frame
 				}
 
-				// 3. Check if giving up (retries exceeded)
-				if (movementState && movementState.collisionRetryCount >= MAX_COLLISION_RETRIES) {
-					// Give up
-					entityManager.removeComponent(entity.id, 'moveTarget');
-					entityManager.removeComponent(entity.id, 'movementState');
-					continue; // Skip movement
-				}
-
-				// 4. Perform target-directed movement if not pausing, avoiding, or giving up
+				// 4. Perform target-directed movement if not giving up, pausing, or avoiding
 				const target = entity.components.moveTarget;
 				const dx = target.x - pos.x;
 				const dy = target.y - pos.y;
